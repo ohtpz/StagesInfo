@@ -1,0 +1,89 @@
+// Offers table
+export interface Offer {
+  id: string
+  company_id: string
+  title: string
+  description: string
+  duration: string
+  start_date: string
+  end_date: string
+  location: string
+  sector: string
+  status: 'offer_status' // You may want to define this enum based on your status values
+  created_at: string
+  updated_at: string
+  // Relations
+  company?: Company
+}
+
+// Companies table
+export interface Company {
+  id: string
+  owner_user_id: string
+  name: string
+  address: string
+  contact_email: string
+  sector: string
+  contact_person: string
+  created_at: string
+  updated_at: string
+}
+
+// Applications table
+export interface Application {
+  id: string
+  student_id: string
+  offer_id: string
+  applied_at: string
+  status: 'application_status'
+  motivation_letter: string
+  created_at: string
+  updated_at: string
+}
+
+// Students table
+export interface Student {
+  user_id: string
+  cv_path: string
+  created_at: string
+  updated_at: string
+}
+
+// Reviews table
+export interface Review {
+  id: string
+  application_id: string
+  rating: number
+  comment: string
+  evaluator: string
+  evaluated_at: string
+  created_at: string
+  updated_at: string
+}
+
+// Profiles table
+export interface Profile {
+  id: string
+  role: 'user_role'
+  first_name: string
+  last_name: string
+  created_at: string
+  updated_at: string
+}
+
+// Skills table
+export interface Skill {
+  id: number
+  name: string
+}
+
+// Junction tables
+export interface OfferSkill {
+  offer_id: string
+  skill_id: number
+}
+
+export interface StudentSkill {
+  student_id: string
+  skill_id: number
+}

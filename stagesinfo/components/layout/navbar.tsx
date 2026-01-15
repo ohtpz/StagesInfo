@@ -11,7 +11,7 @@ export function Navbar() {
           <Link href="/" className="nav-link">
             Offres
           </Link>
-          <Link href="/connexion" className="nav-link text-chart-1">
+          <Link href="/connexion" className="nav-link text-blue">
             Connexion
           </Link>
         </ul>
