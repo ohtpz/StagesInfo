@@ -1,6 +1,37 @@
+"use client" // because of useState and useEffect
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { getCurrentUser, deconnexion } from "../../lib/auth";
+import { useState, useEffect } from "react";
 
 export function Navbar() {
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const currentUser = await getCurrentUser();
+        setUser(currentUser);
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        setUser(null);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    try {
+      await deconnexion();
+      setUser(null);
+      router.push('/');
+    } catch (error) {
+      console.error("Error logging out:", error);
+    }
+  };
+
   return (
     <header>
       <nav>
@@ -11,9 +42,23 @@ export function Navbar() {
           <Link href="/" className="nav-link">
             Offres
           </Link>
-          <Link href="/connexion" className="nav-link text-blue">
-            Connexion
-          </Link>
+          {user ? (
+            <>
+              <Link href="/dashboard" className="nav-link">
+                Dashboard
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="nav-link text-red-400 hover:text-red-600 hover:decoration-red-500"
+              >
+                Se deconnecter
+              </button>
+            </>
+          ) : (
+            <Link href="/connexion" className="nav-link text-blue">
+              Connexion
+            </Link>
+          )}
         </ul>
       </nav>
     </header>

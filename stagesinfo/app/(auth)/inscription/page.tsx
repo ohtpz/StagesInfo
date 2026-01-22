@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/layout/navbar";
 import {
   Card,
@@ -23,6 +24,7 @@ const SignupPage = () => {
     const [role, setRole] = useState<"student" | "company">("student");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const router = useRouter();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -38,6 +40,8 @@ const SignupPage = () => {
         try {
             await inscription(email, password, firstName, lastName, role);
             // Rediriger l'utilisateur après une inscription réussie
+            router.push("/");
+
         } catch (err: any) {
             setError(err.message || "Erreur lors de l'inscription");
         } finally {
@@ -56,7 +60,7 @@ const SignupPage = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit={handleSubmit}>
                 {error && (
                   <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
                     {error}
@@ -131,8 +135,11 @@ const SignupPage = () => {
                   type="password"
                   placeholder="••••••••"
                   className="w-full px-3 py-2 border rounded-md"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                <p className="text-xs text-gray-500">Doit contenir : min 8 caractères, 1 chiffre, 1 majuscule, 1 caractère spécial</p>
               </div>
               <div className="space-y-2">
                 <label htmlFor="confirmPassword" className="text-sm font-medium">
@@ -143,11 +150,13 @@ const SignupPage = () => {
                   type="password"
                   placeholder="••••••••"
                   className="w-full px-3 py-2 border rounded-md"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
                   required
                 />
               </div>
-              <Button type="submit" className="w-full bg-blue hover:bg-blue-600">
-                S'inscrire
+              <Button type="submit" className="w-full bg-blue hover:bg-blue-600" disabled={loading}>
+                {loading ? "En cours..." : "S'inscrire"}
               </Button>
             </form>
           </CardContent>

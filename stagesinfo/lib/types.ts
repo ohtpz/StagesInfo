@@ -1,3 +1,6 @@
+// Offer status enum
+export type OfferStatus = 'available' | 'expired' | 'filled';
+
 // Offers table
 export interface Offer {
   id: string
@@ -9,7 +12,7 @@ export interface Offer {
   end_date: string
   location: string
   sector: string
-  status: 'offer_status' // You may want to define this enum based on your status values
+  status: OfferStatus
   created_at: string
   updated_at: string
   // Relations
@@ -62,9 +65,11 @@ export interface Review {
 }
 
 // Profiles table
+export type UserRole = 'admin' | 'company' | 'student';
+
 export interface Profile {
   id: string
-  role: 'user_role'
+  role: UserRole
   first_name: string
   last_name: string
   created_at: string

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Schibsted_Grotesk, Martian_Mono } from "next/font/google";
 import "./globals.css";
 
-const schibstedGrotesk   = Schibsted_Grotesk({
+const schibstedGrotesk = Schibsted_Grotesk({
   variable: "--font-schibsted-grotesk",
   subsets: ["latin"],
 });
@@ -26,6 +26,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${schibstedGrotesk.variable} ${martianMono.variable} min-h-screen antialiased bg-background`}
+        suppressHydrationWarning
       >
         {children}
       </body>

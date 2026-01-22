@@ -1,8 +1,10 @@
-import { supabase } from './supabase'
+import { create } from 'domain'
+import { createClient } from './supabase/client'
 import { Offer } from './types'
 
 // Get all offers with company information
 export async function getOffers(): Promise<Offer[]> {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('offers')
     .select(`
@@ -21,6 +23,7 @@ export async function getOffers(): Promise<Offer[]> {
 
 // Get a single offer by ID with company information
 export async function getOfferById(id: string): Promise<Offer | null> {
+  const supabase = createClient()
   const { data, error } = await supabase
     .from('offers')
     .select(`
@@ -38,59 +41,69 @@ export async function getOfferById(id: string): Promise<Offer | null> {
   return data
 }
 
-// Get offers by sector
-export async function getOffersBySector(sector: string): Promise<Offer[]> {
-  const { data, error } = await supabase
-    .from('offers')
-    .select(`
-      *,
-      company:companies(*)
-    `)
-    .eq('sector', sector)
-    .order('created_at', { ascending: false })
+export async function getOffersFiltered({title, location, sector}: {title?: string, location?: string, sector?: string}): Promise<Offer[]> {
+  const supabase = createClient();
 
-  if (error) {
-    console.error('Error fetching offers by sector:', error)
-    throw error
+  let query = supabase.from('offers')
+    .select(`*,
+      company:companies(*)
+    `);
+
+  if (title && title.trim()) {
+    query = query.ilike('title', `%${title}%`);
   }
 
-  return data || []
-}
-
-// Get offers by location
-export async function getOffersByLocation(location: string): Promise<Offer[]> {
-  const { data, error } = await supabase
-    .from('offers')
-    .select(`
-      *,
-      company:companies(*)
-    `)
-    .ilike('location', `%${location}%`)
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('Error fetching offers by location:', error)
-    throw error
+  if (location && location.trim()) {
+    query = query.ilike('location', `%${location}%`);
   }
 
-  return data || []
+  if (sector && sector !== 'all') {
+    query = query.eq('sector', sector);
+  }
+
+  query = query.order('created_at', { ascending: false });
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error('Error fetching filtered offers:', error);
+    throw error;
+  }
+
+  return data || [];
 }
 
-// Get offers by company
-export async function getOffersByCompany(companyId: string): Promise<Offer[]> {
+// Get unique sectors from all offers
+export async function getUniqueSectors(): Promise<string[]> {
+  const supabase = createClient();
+
   const { data, error } = await supabase
     .from('offers')
-    .select(`
-      *,
-      company:companies(*)
-    `)
+    .select('sector')
+    .order('sector', { ascending: true });
+
+  if (error) {
+    console.error('Error fetching sectors:', error);
+    throw error;
+  }
+
+  // Extract unique sectors from the data
+  const uniqueSectors = [...new Set(data?.map(offer => offer.sector) || [])];
+
+  return uniqueSectors;
+}
+
+export async function getOffersByCompany(companyId: string): Promise<Offer[] | null> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('offers')
+    .select('*')
     .eq('company_id', companyId)
-    .order('created_at', { ascending: false })
 
-  if (error) {
-    console.error('Error fetching offers by company:', error)
-    throw error
+  if(error) {
+    console.error('Error fetching offers : ', error)
+    return null
   }
-
-  return data || []
+  return data || null
 }
