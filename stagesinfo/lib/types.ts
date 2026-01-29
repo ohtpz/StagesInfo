@@ -1,3 +1,7 @@
+// Generic utility types for database operations
+// Removes auto-generated fields (id, created_at, updated_at) for create operations
+export type CreateInput<T> = Omit<T, 'id' | 'created_at' | 'updated_at'>
+
 // Offer status enum
 export type OfferStatus = 'available' | 'expired' | 'filled';
 
@@ -22,7 +26,6 @@ export interface Offer {
 // Companies table
 export interface Company {
   id: string
-  owner_user_id: string
   name: string
   address: string
   contact_email: string
@@ -31,6 +34,11 @@ export interface Company {
   created_at: string
   updated_at: string
 }
+
+// Type for creating a new Model (without auto-generated fields)
+export type CompanyInput = CreateInput<Company>
+export type OfferInput = CreateInput<Offer>
+export type ApplicationInput = CreateInput<Application>
 
 // Applications table
 export interface Application {

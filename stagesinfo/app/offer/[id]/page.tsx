@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { Navbar } from "@/components/layout/navbar";
 import { getOfferById } from "@/lib/offers";
 import type { Offer } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import  BackButton  from "@/components/ui/backButton";
 import { Input } from "@/components/ui/input";
 import { submitApplicationWithCV, hasUserApplied } from "@/lib/applications";
 import { getCurrentUser } from "@/lib/auth";
@@ -61,7 +61,6 @@ export default function OfferDetailPage() {
         }
     }, [offer]);
 
-    // Helper function for badge configuration
     const getBadgeConfig = (status: string) => {
         switch (status) {
             case 'available':
@@ -90,7 +89,6 @@ export default function OfferDetailPage() {
     if (loading) {
         return (
             <>
-                <Navbar />
                 <div className="container mx-auto sm:px-10 px-5 py-8">
                     <p>Chargement...</p>
                 </div>
@@ -101,7 +99,6 @@ export default function OfferDetailPage() {
     if (!offer) {
         return (
             <>
-                <Navbar />
                 <div className="container mx-auto sm:px-10 px-5 py-8">
                     <h1 className="text-3xl font-bold mb-6">Offre non trouvée</h1>
                     <p className="mb-4">L'offre que vous recherchez n'existe pas ou a été supprimée.</p>
@@ -117,15 +114,9 @@ export default function OfferDetailPage() {
 
     return (
         <>
-            <Navbar />
             <div className="container mx-auto sm:px-10 px-5 py-8 max-w-4xl">
                 {/* Back button */}
-                <button
-                    onClick={() => router.back()}
-                    className="mb-6 text-blue-600 hover:text-blue-800 flex items-center gap-2 font-medium"
-                >
-                    ← Retour
-                </button>
+                <BackButton />
 
                 {/* Main Card */}
                 <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 space-y-8">

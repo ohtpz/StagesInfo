@@ -12,6 +12,11 @@ export const connexion = async (email: string, password: string) => {
     throw error;
   }
 
+  // Dispatch custom event to notify navbar
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('auth-state-changed'));
+  }
+
   return data.user;
 };
 
@@ -88,6 +93,11 @@ export const deconnexion = async () => {
 
   if (error) {
     throw error;
+  }
+
+  // Dispatch custom event to notify navbar
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event('auth-state-changed'));
   }
 };
 

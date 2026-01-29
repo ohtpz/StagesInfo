@@ -3,7 +3,7 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Navbar } from "@/components/layout/navbar";
+import { Input } from "@/components/ui/input";
 import {
   Card,
   CardContent,
@@ -40,7 +40,6 @@ const LoginPage = () => {
 
   return (
     <>
-      <Navbar />
       <div className="container mx-auto sm:px-10 px-5 py-8 flex justify-center items-center min-h-[80vh]">
         <Card className="w-full max-w-md">
           <CardHeader>
@@ -84,8 +83,8 @@ const LoginPage = () => {
                   required
                 />
               </div>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 className="w-full bg-blue hover:bg-blue-600"
                 disabled={loading}
               >

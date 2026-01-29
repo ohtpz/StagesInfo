@@ -1,11 +1,13 @@
-"use client" // because of useState and useEffect
+"use client"
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getCurrentUser, deconnexion } from "../../lib/auth";
+import { createClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
 
 export function Navbar() {
   const [user, setUser] = useState(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -17,10 +19,18 @@ export function Navbar() {
         setUser(null);
       }
     };
+
     fetchUser();
+
+    // Listen for auth state changes (login/logout)
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { // Listener for auth state changes
+      fetchUser(); // fetchUser() already handles all cases
+    });
+
+    return () => subscription?.unsubscribe();
   }, []);
 
-  const router = useRouter();
 
   const handleLogout = async () => {
     try {

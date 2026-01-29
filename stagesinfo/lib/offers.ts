@@ -1,25 +1,6 @@
-import { create } from 'domain'
 import { createClient } from './supabase/client'
 import { Offer } from './types'
 
-// Get all offers with company information
-export async function getOffers(): Promise<Offer[]> {
-  const supabase = createClient()
-  const { data, error } = await supabase
-    .from('offers')
-    .select(`
-      *,
-      company:companies(*)
-    `)
-    .order('created_at', { ascending: false })
-
-  if (error) {
-    console.error('Error fetching offers:', error)
-    throw error
-  }
-
-  return data || []
-}
 
 // Get a single offer by ID with company information
 export async function getOfferById(id: string): Promise<Offer | null> {
@@ -41,14 +22,30 @@ export async function getOfferById(id: string): Promise<Offer | null> {
   return data
 }
 
-export async function getOffersFiltered({title, location, sector}: {title?: string, location?: string, sector?: string}): Promise<Offer[]> {
+export async function getOffersFiltered({
+  title, 
+  location, 
+  sector,
+  page = 1,
+  limit = 10
+}: {
+  title?: string, 
+  location?: string, 
+  sector?: string,
+  page?: number,
+  limit?: number
+}): Promise<{ data: Offer[], count: number }> {
   const supabase = createClient();
 
-  let query = supabase.from('offers')
-    .select(`*,
+  // Start building the query
+  let query = supabase
+    .from('offers')
+    .select(`
+      *,
       company:companies(*)
-    `);
+    `, { count: 'exact' });
 
+  // Apply filters only if they have values
   if (title && title.trim()) {
     query = query.ilike('title', `%${title}%`);
   }
@@ -61,16 +58,22 @@ export async function getOffersFiltered({title, location, sector}: {title?: stri
     query = query.eq('sector', sector);
   }
 
-  query = query.order('created_at', { ascending: false });
+  // Add pagination
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
 
-  const { data, error } = await query;
+  query = query
+    .order('created_at', { ascending: false })
+    .range(from, to);
+
+  const { data, error, count } = await query;
 
   if (error) {
-    console.error('Error fetching filtered offers:', error);
+    console.error('Error fetching offers:', error);
     throw error;
   }
 
-  return data || [];
+  return { data: data || [], count: count || 0 };
 }
 
 // Get unique sectors from all offers

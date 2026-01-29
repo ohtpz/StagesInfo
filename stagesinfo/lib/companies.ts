@@ -1,5 +1,5 @@
 import { createClient } from './supabase/client'
-import { Company } from './types'
+import { Company, CompanyInput } from './types'
 
 // Get all companies
 export async function getCompanies(): Promise<Company[]> {
@@ -64,4 +64,20 @@ export async function getCompaniesByOwner(ownerUserId: string): Promise<Company[
     return null
   }
   return data || []
+}
+
+export async function createCompany(company: CompanyInput ): Promise<Company | null> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('companies')
+    .insert([company])
+    .select()  // ← This tells Supabase to return the inserted row
+    .single()
+
+  if (error) {
+    console.error('Error creating company:', error)
+    return null
+  }
+
+  return data
 }

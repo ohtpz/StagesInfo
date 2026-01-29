@@ -16,41 +16,40 @@ import { inscription } from "@/lib/auth";
 
 
 const SignupPage = () => {
-    const [firstName, setFirstName] = useState("");
-    const [lastName, setLastName] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
-    const [role, setRole] = useState<"student" | "company">("student");
-    const [error, setError] = useState("");
-    const [loading, setLoading] = useState(false);
-    const router = useRouter();
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [role, setRole] = useState<"student" | "company">("student");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError("");
-        setLoading(true);
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-        if (password !== confirmPassword) {
-            setError("Les mots de passe ne correspondent pas");
-            setLoading(false);
-            return;
-        }
-
-        try {
-            await inscription(email, password, firstName, lastName, role);
-            // Rediriger l'utilisateur après une inscription réussie
-            router.push("/");
-
-        } catch (err: any) {
-            setError(err.message || "Erreur lors de l'inscription");
-        } finally {
-            setLoading(false);
-        }
+    if (password !== confirmPassword) {
+      setError("Les mots de passe ne correspondent pas");
+      setLoading(false);
+      return;
     }
+
+    try {
+      await inscription(email, password, firstName, lastName, role);
+      // Rediriger l'utilisateur après une inscription réussie
+      router.push("/");
+
+    } catch (err: any) {
+      setError(err.message || "Erreur lors de l'inscription");
+    } finally {
+      setLoading(false);
+    }
+  }
   return (
     <>
-      <Navbar />
       <div className="container mx-auto sm:px-10 px-5 py-8 flex justify-center items-center min-h-[80vh]">
         <Card className="w-full max-w-md">
           <CardHeader>
@@ -61,11 +60,11 @@ const SignupPage = () => {
           </CardHeader>
           <CardContent>
             <form className="space-y-4" onSubmit={handleSubmit}>
-                {error && (
-                  <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
-                    {error}
-                  </div>
-                )}
+              {error && (
+                <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm">
+                  {error}
+                </div>
+              )}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label htmlFor="firstName" className="text-sm font-medium">
