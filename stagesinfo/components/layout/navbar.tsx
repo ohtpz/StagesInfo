@@ -22,12 +22,15 @@ export function Navbar() {
 
     fetchUser();
 
-    // Listen for auth state changes (login/logout)
+    
     const supabase = createClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { // Listener for auth state changes
+    // listener 
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { // Activates when the user logs in or out
       fetchUser(); // fetchUser() already handles all cases
     });
 
+
+    // cleans up memory to prevent memory leaks
     return () => subscription?.unsubscribe();
   }, []);
 

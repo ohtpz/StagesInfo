@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { connexion } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/client";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -38,10 +39,22 @@ const LoginPage = () => {
     }
   };
 
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient();
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        router.push("/");
+      }
+    };
+    checkAuth();
+  }, [router]);
+
+
   return (
     <>
       <div className="container mx-auto sm:px-10 px-5 py-8 flex justify-center items-center min-h-[80vh]">
-        <Card className="w-full max-w-md">
+        <Card className="w-full max-w-lg">
           <CardHeader>
             <CardTitle className="text-2xl">Connexion</CardTitle>
             <CardDescription>

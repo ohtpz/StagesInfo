@@ -26,13 +26,16 @@ export interface Offer {
 // Companies table
 export interface Company {
   id: string
+  owner_id: string
   name: string
   address: string
-  contact_email: string
   sector: string
-  contact_person: string
   created_at: string
   updated_at: string
+
+  // Relations
+  offers?: Offer[]
+  profile?: Profile
 }
 
 // Type for creating a new Model (without auto-generated fields)

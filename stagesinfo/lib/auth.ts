@@ -21,7 +21,14 @@ export const connexion = async (email: string, password: string) => {
 };
 
 // Sign up à la base de donnée
-export const inscription = async (email: string, password: string, firstName: string, lastName: string, role: 'student' | 'company') => {
+export const inscription = async (
+  email: string,
+  password: string,
+  firstName: string,
+  lastName: string,
+  role: 'student' | 'company',
+  companyData?: { name: string; sector: string; address: string }
+) => {
   const supabase = createClient();
 
   // Create the user
@@ -66,7 +73,7 @@ export const inscription = async (email: string, password: string, firstName: st
     throw new Error(`Profile creation failed: ${profileError.message}`);
   }
 
-  // Step 4: If student, create student record
+  // If student, create student record
   if (role === 'student') {
     const { error: studentError } = await supabase
       .from('students')
@@ -81,6 +88,23 @@ export const inscription = async (email: string, password: string, firstName: st
     if (studentError) {
       console.error("Student creation error:", studentError);
       throw new Error(`Student creation failed: ${studentError.message}`);
+    }
+  }
+
+  // If company, create company record
+  if (role === 'company' && companyData) {
+    const { error: companyError } = await supabase
+      .from('companies')
+      .insert({
+        owner_id: data.user.id,
+        name: companyData.name,
+        sector: companyData.sector,
+        address: companyData.address,
+      });
+
+    if (companyError) {
+      console.error("Company creation error:", companyError);
+      throw new Error(`Company creation failed: ${companyError.message}`);
     }
   }
 
@@ -108,7 +132,7 @@ export const getCurrentUser = async () => {
   const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
 
   if (authError || !authUser) {
-    throw authError || new Error('No authenticated user');
+    return null; // Return null when no user is logged in
   }
 
   // Then, get the full profile from the profiles table

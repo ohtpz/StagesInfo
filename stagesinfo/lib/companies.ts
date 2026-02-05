@@ -52,18 +52,19 @@ export async function getCompaniesBySector(sector: string): Promise<Company[]> {
 }
 
 // Get companies by the owner user ID
-export async function getCompaniesByOwner(ownerUserId: string): Promise<Company[] | null> {
+export async function getCompanyByOwner(ownerUserId: string): Promise<Company | null> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('companies')
     .select('*')
-    .eq('owner_user_id', ownerUserId)
+    .eq('owner_id', ownerUserId)
+    .single()
 
   if (error) {
     console.error('Error fetching company by owner:', error)
     return null
   }
-  return data || []
+  return data
 }
 
 export async function createCompany(company: CompanyInput ): Promise<Company | null> {
