@@ -34,6 +34,7 @@ const LoginPage = () => {
       router.push("/");
     } catch (err: any) {
       setError(err.message || "Erreur lors de la connexion");
+      setPassword("");
     } finally {
       setLoading(false);
     }

@@ -1,7 +1,7 @@
 "use client"
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { useRouter, useEffect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -56,6 +56,8 @@ const SignupPage = () => {
 
     } catch (err: any) {
       setError(err.message || "Erreur lors de l'inscription");
+      setPassword(""); // Clear password
+      setConfirmPassword(""); 
     } finally {
       setLoading(false);
     }
