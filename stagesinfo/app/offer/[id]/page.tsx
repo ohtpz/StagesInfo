@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getOfferById } from "@/lib/offers";
-import type { Offer } from "@/lib/types";
+import { getOfferById, deleteOffer } from "@/lib/offers";
+import type { Offer, Profile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import  BackButton  from "@/components/ui/backButton";
+import BackButton from "@/components/ui/backButton";
 import { Input } from "@/components/ui/input";
 import { submitApplicationWithCV, hasUserApplied } from "@/lib/applications";
 import { getCurrentUser } from "@/lib/auth";
@@ -20,7 +20,7 @@ export default function OfferDetailPage() {
     const [submitError, setSubmitError] = useState<string | null>(null);
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [alreadyApplied, setAlreadyApplied] = useState(false);
-    const [currentUser, setCurrentUser] = useState<any>(null);
+    const [currentUser, setCurrentUser] = useState<Profile | null>(null);
 
     useEffect(() => {
         const fetchOffer = async () => {
@@ -46,7 +46,6 @@ export default function OfferDetailPage() {
             try {
                 const user = await getCurrentUser();
                 setCurrentUser(user);
-
                 if (user && offer) {
                     const applied = await hasUserApplied(offer.id, user.id);
                     setAlreadyApplied(applied);
@@ -112,6 +111,14 @@ export default function OfferDetailPage() {
 
     const badgeConfig = getBadgeConfig(offer.status);
 
+    const handleDelete = async () => {
+        if (confirm('Vous êtes sûr de vouloir supprimer cette offre ?')) {
+            const result = await deleteOffer(offer.id);
+            if (result) {
+                router.push('/dashboard');
+            }
+        }
+    };
     return (
         <>
             <div className="container mx-auto sm:px-10 px-5 py-8 max-w-4xl">
@@ -138,10 +145,10 @@ export default function OfferDetailPage() {
                             </div>
                             <div>
                                 <p className="text-sm font-medium text-gray-600">Contact:</p>
-                                <p className="text-base text-blue-600">
-                                    <a href={`mailto:${offer.company?.contact_email}`}>
-                                        {offer.company?.contact_email || 'N/A'}
-                                    </a>
+                                <p className="text-base text-gray-900">
+                                    {offer.company?.profile
+                                        ? `${offer.company.profile.first_name} ${offer.company.profile.last_name}`
+                                        : 'N/A'}
                                 </p>
                             </div>
                             <div>
@@ -162,12 +169,12 @@ export default function OfferDetailPage() {
                             {offer.description}
                         </div>
                     </div>
-                    <hr />
-                    {/* Compétences requises - Placeholder for now */}
+                    {/* <hr />
+                    Compétences requises - Placeholder for now
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">Compétences requises</h2>
                         <div className="flex flex-wrap gap-2">
-                            {/* These would come from offer.skills when available */}
+                            These would come from offer.skills when available
                             <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                                 React
                             </Badge>
@@ -181,7 +188,7 @@ export default function OfferDetailPage() {
                                 Git
                             </Badge>
                         </div>
-                    </div>
+                    </div> */}
                     <hr />
                     {/* Détails du stage Section */}
                     <div>
@@ -206,7 +213,7 @@ export default function OfferDetailPage() {
                         </div>
                     </div>
                     {/* Candidature Section */}
-                    {offer.status === 'available' && (
+                    {currentUser?.role === 'student' && offer.status === 'available' && (
                         <div>
                             <h2 className="text-2xl font-bold text-gray-900 mb-4">Candidature</h2>
 
@@ -312,6 +319,20 @@ export default function OfferDetailPage() {
                                     </Button>
                                 </form>
                             )}
+                        </div>
+                    )}
+                    {currentUser?.role === 'company' && (
+                        <div>
+                            <h2 className="text-2xl font-bold text-gray-900 mb-4">Candidatures</h2>
+                            <div className="space-y-3 flex justify-center gap-3">
+                                <Link href={`/offer/${offer.id}/applications`}>
+                                    <Button className="bg-blue-600 hover:bg-blue-700 text-white">Voir les candidatures</Button>
+                                </Link>
+                                <Link href={`/offer/${offer.id}/edit`}>
+                                    <Button className="bg-[#FFC107] hover:bg-[#FFA000] text-white">Modifier l'offre</Button>
+                                </Link>
+                                <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={handleDelete}>Supprimer l'offre</Button>
+                            </div>
                         </div>
                     )}
                 </div>

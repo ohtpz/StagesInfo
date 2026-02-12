@@ -67,18 +67,19 @@ export async function getCompanyByOwner(ownerUserId: string): Promise<Company | 
   return data
 }
 
-export async function createCompany(company: CompanyInput ): Promise<Company | null> {
+export async function updateCompany(id: string, company: CompanyInput): Promise<Company | null> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('companies')
-    .insert([company])
-    .select()  // ← This tells Supabase to return the inserted row
+    .update(company)
+    .eq('id', id)
+    .select()
     .single()
 
   if (error) {
-    console.error('Error creating company:', error)
+    console.error('Error updating company:', error)
     return null
   }
-
   return data
 }
+

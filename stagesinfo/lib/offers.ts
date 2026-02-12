@@ -1,5 +1,5 @@
 import { createClient } from './supabase/client'
-import { Offer } from './types'
+import { Offer, OfferInput } from './types'
 
 
 // Get a single offer by ID with company information
@@ -8,9 +8,12 @@ export async function getOfferById(id: string): Promise<Offer | null> {
   const { data, error } = await supabase
     .from('offers')
     .select(`
-      *,
-      company:companies(*)
-    `)
+      *, 
+      company:companies(
+        *,
+        profile:profiles(*)
+      )
+    `) // Get all the offers, join with company and get all company, join with profile and get all profile
     .eq('id', id)
     .single()
 
@@ -23,14 +26,14 @@ export async function getOfferById(id: string): Promise<Offer | null> {
 }
 
 export async function getOffersFiltered({
-  title, 
-  location, 
+  title,
+  location,
   sector,
   page = 1,
   limit = 10
 }: {
-  title?: string, 
-  location?: string, 
+  title?: string,
+  location?: string,
   sector?: string,
   page?: number,
   limit?: number
@@ -43,7 +46,8 @@ export async function getOffersFiltered({
     .select(`
       *,
       company:companies(*)
-    `, { count: 'exact' });
+    `, { count: 'exact' })
+    .eq('status', 'available');  // Only show available offers
 
   // Apply filters only if they have values
   if (title && title.trim()) {
@@ -104,9 +108,58 @@ export async function getOffersByCompany(companyId: string): Promise<Offer[] | n
     .select('*')
     .eq('company_id', companyId)
 
-  if(error) {
+  if (error) {
     console.error('Error fetching offers : ', error)
     return null
   }
   return data || null
+}
+
+export async function createOffer(offer: OfferInput) {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('offers')
+    .insert([offer])
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error creating offer : ', error)
+    return null
+  }
+  return data || null
+}
+
+
+export async function updateOffer(id: string, offer: OfferInput) {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('offers')
+    .update(offer)
+    .eq('id', id)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating offer : ', error)
+    return null
+  }
+  return data || null
+}
+
+export async function deleteOffer(id: string) {
+  const supabase = createClient()
+
+  const { error } = await supabase
+    .from('offers')
+    .delete()
+    .eq('id', id)
+
+  if (error) {
+    console.error('Error deleting offer : ', error)
+    return null
+  }
+  return true
 }

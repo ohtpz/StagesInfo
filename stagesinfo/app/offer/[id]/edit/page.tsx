@@ -5,9 +5,10 @@ import type { Profile, Company } from "@/lib/types";
 import { getCurrentUser } from "@/lib/auth";
 import { getCompanyByOwner } from "@/lib/companies";
 import BackButton from "@/components/ui/backButton";
-import { createOffer } from "@/lib/offers";
+import { updateOffer, getOfferById } from "@/lib/offers";
+import { useParams } from "next/navigation";
 
-export default function CreateOfferPage() {
+export default function UpdateOfferPage() {
     const router = useRouter();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [company, setCompany] = useState<Company | null>(null);
@@ -21,8 +22,11 @@ export default function CreateOfferPage() {
         dateFin: "",
         location: "",
         sector: "",
+        status: ""
     });
 
+    const params = useParams();
+    const idParam = params.id as string;
     useEffect(() => {
         const fetchUserAndCompany = async () => {
             const userData = await getCurrentUser();
@@ -41,6 +45,27 @@ export default function CreateOfferPage() {
             setCompany(companyData);
             setLoading(false);
         };
+
+        const fetchOffer = async () => {
+            const offerData = await getOfferById(idParam);
+            if (!offerData) {
+                setError("Aucune offre trouvée");
+                setLoading(false);
+                return;
+            }
+            setFormData({
+                title: offerData.title,
+                description: offerData.description,
+                duration: offerData.duration,
+                dateDebut: offerData.start_date,
+                dateFin: offerData.end_date,
+                location: offerData.location,
+                sector: offerData.sector,
+                status: offerData.status
+            });
+            setLoading(false);
+        };
+        fetchOffer();
         fetchUserAndCompany();
     }, []);
 
@@ -62,9 +87,8 @@ export default function CreateOfferPage() {
             setLoading(false);
             return;
         }
-
         // Create the offer
-        const result = await createOffer({
+        const result = await updateOffer(idParam, {
             company_id: company.id,
             title: formData.title,
             description: formData.description,
@@ -73,9 +97,11 @@ export default function CreateOfferPage() {
             end_date: formData.dateFin,
             location: formData.location,
             sector: formData.sector,
-            status: 'available'
+            status: formData.status
         });
 
+
+        
         if (!result) {
             setError("Erreur lors de la création de l'offre");
             setLoading(false);
@@ -90,7 +116,7 @@ export default function CreateOfferPage() {
             <div className="max-w-2xl mx-auto">
                 <BackButton />
                 <div className="bg-white shadow-lg rounded-lg p-8 mt-6">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-8">Créer un stage</h1>
+                    <h1 className="text-3xl font-bold text-gray-900 mb-8">Modifier le stage</h1>
 
                     {error && (
                         <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -204,11 +230,25 @@ export default function CreateOfferPage() {
                             />
                         </div>
 
+                        <div>
+                            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">Disponibilité</label>
+                            <select
+                                name="status"
+                                id="status"
+                                value={formData.status}
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                            >
+                                <option value="available">Disponible</option>
+                                <option value="filled">Pourvue</option>
+                                <option value="expired">Expiré</option>
+                            </select>
+                        </div>
                         <button
                             type="submit"
                             className="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-all duration-200 shadow-md hover:shadow-lg"
                         >
-                            Créer le stage
+                            Modifier le stage
                         </button>
                     </form>
                 </div>
