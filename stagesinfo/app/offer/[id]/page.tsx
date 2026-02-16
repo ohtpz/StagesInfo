@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getOfferById, deleteOffer } from "@/lib/offers";
@@ -21,6 +21,7 @@ export default function OfferDetailPage() {
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [alreadyApplied, setAlreadyApplied] = useState(false);
     const [currentUser, setCurrentUser] = useState<Profile | null>(null);
+    const [cvFile, setCvFile] = useState<File | null>(null);
 
     useEffect(() => {
         const fetchOffer = async () => {
@@ -60,30 +61,7 @@ export default function OfferDetailPage() {
         }
     }, [offer]);
 
-    const getBadgeConfig = (status: string) => {
-        switch (status) {
-            case 'available':
-                return {
-                    className: 'bg-green-100 text-green-800',
-                    text: 'Disponible'
-                };
-            case 'expired':
-                return {
-                    className: 'bg-orange-100 text-orange-800 ',
-                    text: 'Expiré'
-                };
-            case 'filled':
-                return {
-                    className: 'bg-gray-100 text-gray-800 ',
-                    text: 'Complet'
-                };
-            default:
-                return {
-                    className: 'bg-red-100 text-red-800 ',
-                    text: 'Non disponible'
-                };
-        }
-    };
+
 
     if (loading) {
         return (
@@ -109,7 +87,13 @@ export default function OfferDetailPage() {
         );
     }
 
-    const badgeConfig = getBadgeConfig(offer.status);
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            setCvFile(file);
+        }
+    };
+
 
     const handleDelete = async () => {
         if (confirm('Vous êtes sûr de vouloir supprimer cette offre ?')) {
@@ -119,6 +103,11 @@ export default function OfferDetailPage() {
             }
         }
     };
+
+    const handleSubmit = async (e: any) => {
+        e.preventDefault();
+        
+    }
     return (
         <>
             <div className="container mx-auto sm:px-10 px-5 py-8 max-w-4xl">
@@ -130,8 +119,8 @@ export default function OfferDetailPage() {
                     {/* Title and Status */}
                     <div>
                         <h1 className="text-4xl font-bold text-gray-900 mb-4">{offer.title}</h1>
-                        <Badge className={`${badgeConfig.className} py-2 px-4 text-sm font-medium`}>
-                            {badgeConfig.text}
+                        <Badge className="bg-green-100 text-green-800 py-2 px-4 text-sm font-medium">
+                            Disponible
                         </Badge>
                     </div>
                     <hr />
@@ -279,19 +268,7 @@ export default function OfferDetailPage() {
 
                                     {/* CV Upload */}
                                     <div>
-                                        <label htmlFor="cv" className="block text-sm font-medium text-gray-700 mb-2">
-                                            CV (PDF, DOC, DOCX) <span className="text-red-500">*</span>
-                                        </label>
-                                        <Input
-                                            type="file"
-                                            id="cv"
-                                            name="cv"
-                                            accept=".pdf,.doc,.docx"
-                                            required
-                                            disabled={submitting}
-                                            className=" text-gray-900  border-gray-300 rounded-lg cursor-pointer bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 "
-                                        />
-                                        <p className="mt-1 text-sm text-gray-500">Formats acceptés: PDF, DOC, DOCX (max 5MB)</p>
+                                        {/* check if they have a cv already, if not tell them to redirect to their profile to upload one */}
                                     </div>
 
                                     {/* Motivation Letter */}

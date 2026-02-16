@@ -60,6 +60,11 @@ export function Navbar() {
               <Link href="/dashboard" className="nav-link">
                 Dashboard
               </Link>
+              {user.role == 'student' && (
+                <Link href="/profile" className="nav-link">
+                  Profile
+                </Link>
+              )}
               <button
                 onClick={handleLogout}
                 className="nav-link text-red-400 hover:text-red-600 hover:decoration-red-500"
