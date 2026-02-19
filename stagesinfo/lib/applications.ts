@@ -22,16 +22,18 @@ export async function getApplicationsByStudent(studentId: string): Promise<Appli
   return data || []
 }
 
-// Get all applications for an offer
+// Get all applications for an offer, with the applicant's name attached.
+// We can't join profiles directly (no FK in the schema), so we:
+//   1. Fetch all applications for this offer
+//   2. Fetch the profiles for all those student_ids in one extra query
+//   3. Manually attach each profile to its application
 export async function getApplicationsByOffer(offerId: string): Promise<Application[]> {
   const supabase = createClient()
-  const { data, error } = await supabase
+
+  // Step 1: get the applications (with the offer data joined)
+  const { data: applications, error } = await supabase
     .from('applications')
-    .select(`
-      *,
-      offer:offers(*),
-      student:students(*)
-    `)
+    .select('*, offer:offers(*)')
     .eq('offer_id', offerId)
     .order('applied_at', { ascending: false })
 
@@ -40,7 +42,30 @@ export async function getApplicationsByOffer(offerId: string): Promise<Applicati
     throw error
   }
 
-  return data || []
+  if (!applications || applications.length === 0) {
+    return []
+  }
+
+  // Step 2: collect all unique student IDs, then fetch their profiles in one query
+  const studentIds = applications.map((app) => app.student_id)
+  const { data: profiles } = await supabase
+    .from('profiles')
+    .select('id, first_name, last_name')
+    .in('id', studentIds)
+
+  // Step 3: build a lookup map { profileId → profile } for fast access
+  const profileMap: Record<string, { first_name: string; last_name: string }> = {}
+  for (const profile of profiles || []) {
+    profileMap[profile.id] = profile
+  }
+
+  // Step 4: attach the matching profile to each application
+  const applicationsWithProfiles = applications.map((app) => ({
+    ...app,
+    profile: profileMap[app.student_id] || null,
+  }))
+
+  return applicationsWithProfiles
 }
 
 // Create a new application

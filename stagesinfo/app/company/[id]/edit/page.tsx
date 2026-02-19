@@ -33,6 +33,7 @@ export default function EditCompany() {
             if (!companyData) {
                 setError("Aucune entreprise trouvée");
                 setLoading(false);
+                router.push('/connexion')
                 return;
             }
             setCompany(companyData);

@@ -1,5 +1,5 @@
 import { createClient } from './supabase/client'
-import { Company, CompanyInput } from './types'
+import { Company } from './types'
 
 // Get all companies
 export async function getCompanies(): Promise<Company[]> {
@@ -67,7 +67,7 @@ export async function getCompanyByOwner(ownerUserId: string): Promise<Company | 
   return data
 }
 
-export async function updateCompany(id: string, company: CompanyInput): Promise<Company | null> {
+export async function updateCompany(id: string, company: Partial<Company>): Promise<Company | null> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('companies')

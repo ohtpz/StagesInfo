@@ -4,9 +4,10 @@ import { useRouter } from "next/navigation";
 import { getCurrentUser, deconnexion } from "../../lib/auth";
 import { createClient } from "@/lib/supabase/client";
 import { useState, useEffect } from "react";
+import type { Profile } from "@/lib/types";
 
 export function Navbar() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<Profile | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -22,7 +23,7 @@ export function Navbar() {
 
     fetchUser();
 
-    
+
     const supabase = createClient();
     // listener 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { // Activates when the user logs in or out
@@ -57,12 +58,13 @@ export function Navbar() {
           </Link>
           {user ? (
             <>
-              <Link href="/dashboard" className="nav-link">
-                Dashboard
-              </Link>
-              {user.role == 'student' && (
+              {user.role === 'student' ? (
                 <Link href="/profile" className="nav-link">
                   Profile
+                </Link>
+              ) : (
+                <Link href="/dashboard" className="nav-link">
+                  Dashboard
                 </Link>
               )}
               <button

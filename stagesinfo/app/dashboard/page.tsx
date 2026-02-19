@@ -1,11 +1,9 @@
 "use client"
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Navbar } from "@/components/layout/navbar";
 import type { Profile } from "@/lib/types";
 import { getCurrentUser } from "@/lib/auth";
 import { CompanyDashboard } from "@/components/dashboard/CompanyDashboard";
-import { StudentDashboard } from "@/components/dashboard/StudentDashboard";
 import { AdminDashboard } from "@/components/dashboard/AdminDashboard";
 
 export default function DashboardPage() {
@@ -32,7 +30,8 @@ export default function DashboardPage() {
     }
     
     if (!user) {
-        return null;
+        router.push('/connexion');
+        return;
     }
 
     const renderDashboard = () => {
@@ -41,8 +40,6 @@ export default function DashboardPage() {
                 return <AdminDashboard user={user} />;
             case 'company':
                 return <CompanyDashboard user={user} />;
-            case 'student':
-                return <StudentDashboard user={user} />;
             default:
                 return <p>Rôle non reconnu</p>;
         }

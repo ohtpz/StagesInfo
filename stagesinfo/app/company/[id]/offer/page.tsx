@@ -4,19 +4,40 @@ import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import type { Offer } from "@/lib/types";
 import { Button } from "@/components/ui/button";
-import Link  from "next/link"
+import Link from "next/link"
 import { getOffersByCompany } from "@/lib/offers";
 import { Card, CardHeader, CardFooter, CardContent, CardTitle } from "@/components/ui/card";
 import { Plus } from "lucide-react";
-import BackButton  from "@/components/ui/backButton";
+import BackButton from "@/components/ui/backButton";
+import { getCurrentUser } from "@/lib/auth";
+import { getCompanyByOwner } from "@/lib/companies";
+import type { Company } from "@/lib/types";
 export default function CompanyOffersPage() {
     const params = useParams();
     const companyId = params.id as string;
     const [offers, setOffers] = useState<Offer[] | null>(null);
     const [loading, setLoading] = useState(true);
-
+    const [error, setError] = useState<string | null>(null);
+    const [company, setCompany] = useState<Company | null>(null);
     const router = useRouter();
     useEffect(() => {
+        
+        const fetchUserAndCompany = async () => {
+            const user = await getCurrentUser();
+            if (!user) {
+                router.push('/connexion');
+                return;
+            }
+            const companyData = await getCompanyByOwner(user.id);
+            if (!companyData) {
+                setError("Aucune entreprise trouvée");
+                setLoading(false);
+                router.push('/connexion')
+                return;
+            }
+            setCompany(companyData);
+        }
+
         const fetchOffers = async () => {
             try {
                 const offersData = await getOffersByCompany(companyId);
@@ -28,6 +49,7 @@ export default function CompanyOffersPage() {
                 setLoading(false);
             }
         };
+        fetchUserAndCompany();
         fetchOffers();
     }, [companyId]);
 
@@ -43,7 +65,7 @@ export default function CompanyOffersPage() {
 
     return (
         <>
-                <BackButton />
+            <BackButton />
 
             <div className="container mx-auto sm:px-10 px-5 py-8">
                 <div className="flex justify-between">
@@ -52,6 +74,11 @@ export default function CompanyOffersPage() {
                         <Button className="bg-blue hover:bg-blue-600 cursor-pointer"> <Plus /></Button>
                     </Link>
                 </div>
+                {error && (
+                    <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-red-800 text-sm font-medium">{error}</p>
+                    </div>
+                )}
                 {offers && offers.length > 0 ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {offers.map((offer) => (

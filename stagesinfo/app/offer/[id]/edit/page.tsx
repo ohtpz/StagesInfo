@@ -33,6 +33,7 @@ export default function UpdateOfferPage() {
             if (!userData) {
                 setError("Utilisateur non trouvé");
                 setLoading(false);
+                router.push('/connexion')
                 return;
             }
             setProfile(userData);

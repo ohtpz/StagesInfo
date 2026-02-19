@@ -1,5 +1,5 @@
 import { createClient } from './supabase/client'
-import { Offer, OfferInput } from './types'
+import { Offer } from './types'
 
 
 // Get a single offer by ID with company information
@@ -115,7 +115,7 @@ export async function getOffersByCompany(companyId: string): Promise<Offer[] | n
   return data || null
 }
 
-export async function createOffer(offer: OfferInput) {
+export async function createOffer(offer: Partial<Offer>) {
   const supabase = createClient()
 
   const { data, error } = await supabase
@@ -131,8 +131,7 @@ export async function createOffer(offer: OfferInput) {
   return data || null
 }
 
-
-export async function updateOffer(id: string, offer: OfferInput) {
+export async function updateOffer(id: string, offer: Partial<Offer>) {
   const supabase = createClient()
 
   const { data, error } = await supabase

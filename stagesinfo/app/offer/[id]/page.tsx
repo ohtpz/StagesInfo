@@ -1,5 +1,5 @@
 "use client"
-import React, { useState, useEffect, ChangeEvent } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getOfferById, deleteOffer } from "@/lib/offers";
@@ -7,9 +7,9 @@ import type { Offer, Profile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import BackButton from "@/components/ui/backButton";
-import { Input } from "@/components/ui/input";
-import { submitApplicationWithCV, hasUserApplied } from "@/lib/applications";
+import { submitApplicationWithCV, hasUserApplied, createApplication } from "@/lib/applications";
 import { getCurrentUser } from "@/lib/auth";
+import { getStudentCV } from "@/lib/students";
 
 export default function OfferDetailPage() {
     const params = useParams();
@@ -21,8 +21,8 @@ export default function OfferDetailPage() {
     const [submitSuccess, setSubmitSuccess] = useState(false);
     const [alreadyApplied, setAlreadyApplied] = useState(false);
     const [currentUser, setCurrentUser] = useState<Profile | null>(null);
-    const [cvFile, setCvFile] = useState<File | null>(null);
-
+    const [hasCv, setHasCv] = useState<boolean>(false);
+    const [motivationLetter, setMotivationLetter] = useState<string>("");
     useEffect(() => {
         const fetchOffer = async () => {
             try {
@@ -47,10 +47,17 @@ export default function OfferDetailPage() {
             try {
                 const user = await getCurrentUser();
                 setCurrentUser(user);
+                if (user.role === 'student') {
+                    const cvPath = await getStudentCV(user.id);
+                    if (cvPath) {
+                        setHasCv(true);
+                    }
+                }
                 if (user && offer) {
                     const applied = await hasUserApplied(offer.id, user.id);
                     setAlreadyApplied(applied);
                 }
+
             } catch (error) {
                 console.error("Error fetching user or checking application:", error);
             }
@@ -87,12 +94,7 @@ export default function OfferDetailPage() {
         );
     }
 
-    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file) {
-            setCvFile(file);
-        }
-    };
+
 
 
     const handleDelete = async () => {
@@ -106,12 +108,30 @@ export default function OfferDetailPage() {
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
-        
+        // Both should always be set by the time the button is visible,
+        // but TypeScript can't know that — guard here to narrow the types.
+        if (!currentUser || !offer) return;
+        try {
+            setSubmitting(true);
+            setSubmitError(null);   
+            setSubmitSuccess(false);
+            const result = await createApplication(currentUser.id, offer.id, motivationLetter);
+            if (result) {
+                setSubmitSuccess(true);
+                setAlreadyApplied(true);
+            }
+        } catch (error) {
+            console.error("Error submitting application:", error);
+            setSubmitError("Erreur lors de l'envoi de la candidature");
+        } finally {
+            setSubmitting(false);
+        }
+
+
     }
     return (
         <>
             <div className="container mx-auto sm:px-10 px-5 py-8 max-w-4xl">
-                {/* Back button */}
                 <BackButton />
 
                 {/* Main Card */}
@@ -122,6 +142,7 @@ export default function OfferDetailPage() {
                         <Badge className="bg-green-100 text-green-800 py-2 px-4 text-sm font-medium">
                             Disponible
                         </Badge>
+
                     </div>
                     <hr />
                     {/* Entreprise Section */}
@@ -266,10 +287,7 @@ export default function OfferDetailPage() {
                                         </div>
                                     )}
 
-                                    {/* CV Upload */}
-                                    <div>
-                                        {/* check if they have a cv already, if not tell them to redirect to their profile to upload one */}
-                                    </div>
+
 
                                     {/* Motivation Letter */}
                                     <div>
@@ -283,17 +301,22 @@ export default function OfferDetailPage() {
                                             required
                                             disabled={submitting}
                                             placeholder="Expliquez pourquoi vous souhaitez rejoindre cette entreprise..."
+                                            onChange={(e) => setMotivationLetter(e.target.value)}
                                             className="block w-full text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 p-3 disabled:opacity-50"
                                         />
                                     </div>
 
-                                    <Button
-                                        type="submit"
-                                        disabled={submitting}
-                                        className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg w-full md:w-auto disabled:opacity-50"
-                                    >
-                                        {submitting ? 'Envoi en cours...' : 'Soumettre ma candidature'}
-                                    </Button>
+                                    {hasCv ?
+                                        <Button
+                                            type="submit"
+                                            disabled={submitting}
+                                            onClick={handleSubmit}
+                                            className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg w-full md:w-auto disabled:opacity-50"
+                                        >
+                                            {submitting ? 'Envoi en cours...' : 'Soumettre ma candidature'}
+                                        </Button> :
+                                        <p>Vous devez avoir un CV pour postuler. Veuillez le déposer sur votre <Link href="/profile" className="text-blue-600 underline">profil</Link>.</p>
+                                    }
                                 </form>
                             )}
                         </div>

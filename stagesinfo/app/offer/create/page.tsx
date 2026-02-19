@@ -22,6 +22,10 @@ export default function CreateOfferPage() {
         location: "",
         sector: "",
     });
+    const [skills, setSkills] = useState<string[]>([]);
+    const [skillInput, setSkillInput] = useState("");
+    const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+    const [numSkills, setNumSkills] = useState(0); // max 5 skills
 
     useEffect(() => {
         const fetchUserAndCompany = async () => {
@@ -29,6 +33,7 @@ export default function CreateOfferPage() {
             if (!userData) {
                 setError("Utilisateur non trouvé");
                 setLoading(false);
+                router.push('/connexion')
                 return;
             }
             setProfile(userData);
@@ -41,7 +46,13 @@ export default function CreateOfferPage() {
             setCompany(companyData);
             setLoading(false);
         };
+        // const fetchSkills = async () => {
+        //     const skillsData = await getSkills();
+        //     setSkills(skillsData);
+        // };
+        // Problem here is that Skills is in the student file, not on its own.
         fetchUserAndCompany();
+        // fetchSkills();
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -204,6 +215,20 @@ export default function CreateOfferPage() {
                             />
                         </div>
 
+                        <div>
+                            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                                Skills (Max 5)
+                            </label>
+                            <select
+                                id="status"
+                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                value={formData.status}
+                                required
+                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                            >
+                                {/* Add skills here */}
+                            </select>
+                        </div>
                         <button
                             type="submit"
                             className="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-all duration-200 shadow-md hover:shadow-lg"
