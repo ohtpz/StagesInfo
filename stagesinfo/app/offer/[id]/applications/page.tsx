@@ -4,9 +4,11 @@ import { useState, useEffect } from "react";
 import { Application, Offer } from "@/lib/types";
 import { getOfferById } from "@/lib/offers";
 import { getApplicationsByOffer, updateApplicationStatus } from "@/lib/applications";
+import { submitReview, getReviewForApplication } from "@/lib/reviews";
 import BackButton from "@/components/ui/backButton";
-import { X, Mail, FileText } from "lucide-react";
+import { X, Mail, FileText, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 
 // Maps each status value to a Tailwind color scheme for the badge
 function statusBadgeClass(status: string) {
@@ -26,9 +28,18 @@ export default function ApplicationsPage() {
     const [error, setError] = useState<string | null>(null);
     const [offer, setOffer] = useState<Offer | null>(null);
 
-    // Stores the motivation letter that is currently being viewed.
-    // null = no letter open, a string = show the letter in the overlay.
+    // Stores the motivation letter currently being viewed (null = closed)
     const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
+
+    // Evaluation dialog state
+    const [evaluatingAppId, setEvaluatingAppId] = useState<string | null>(null);
+    const [rating, setRating] = useState(0);
+    const [hoverRating, setHoverRating] = useState(0);
+    const [comment, setComment] = useState("");
+    const [submittingReview, setSubmittingReview] = useState(false);
+    const [reviewSuccess, setReviewSuccess] = useState(false);
+    // Tracks which applications have already been reviewed
+    const [reviewedAppIds, setReviewedAppIds] = useState<Set<string>>(new Set());
 
     useEffect(() => {
         const fetchOffer = async () => {
@@ -45,6 +56,17 @@ export default function ApplicationsPage() {
             try {
                 const applicationsData = await getApplicationsByOffer(id)
                 setApplications(applicationsData)
+
+                // Check which accepted applications already have a review
+                const acceptedApps = applicationsData.filter(a => a.status === 'accepted');
+                const reviewChecks = await Promise.all(
+                    acceptedApps.map(async (app) => {
+                        const review = await getReviewForApplication(app.id);
+                        return review ? app.id : null;
+                    })
+                );
+                const reviewed = new Set(reviewChecks.filter(Boolean) as string[]);
+                setReviewedAppIds(reviewed);
             } catch (err) {
                 console.error('Error in fetchApplications:', err)
             }
@@ -57,12 +79,36 @@ export default function ApplicationsPage() {
     const handleStatusChange = async (applicationId: string, newStatus: string) => {
         const success = await updateApplicationStatus(applicationId, newStatus);
         if (success) {
-            // Update the local state so the badge re-renders immediately
             setApplications((prev) =>
                 prev.map((app) =>
                     app.id === applicationId ? { ...app, status: newStatus as any } : app
                 )
             );
+        }
+    };
+
+    const openEvalModal = (applicationId: string) => {
+        setEvaluatingAppId(applicationId);
+        setRating(0);
+        setHoverRating(0);
+        setComment("");
+        setReviewSuccess(false);
+    };
+
+    const closeEvalModal = () => {
+        setEvaluatingAppId(null);
+    };
+
+    const handleSubmitReview = async () => {
+        if (!evaluatingAppId || rating === 0) return;
+        setSubmittingReview(true);
+        const success = await submitReview(evaluatingAppId, rating, comment);
+        setSubmittingReview(false);
+        if (success) {
+            setReviewSuccess(true);
+            setReviewedAppIds(prev => new Set([...prev, evaluatingAppId]));
+            // Close modal after a short delay to show the success message
+            setTimeout(() => closeEvalModal(), 1500);
         }
     };
 
@@ -103,8 +149,8 @@ export default function ApplicationsPage() {
                                     </Badge>
                                 </div>
 
-                                {/* Bottom row: status dropdown + letter button */}
-                                <div className="flex items-center gap-3 pt-1 border-t border-gray-100">
+                                {/* Bottom row: status dropdown + letter button + CV + evaluate */}
+                                <div className="flex items-center gap-3 pt-1 border-t border-gray-100 flex-wrap">
                                     {/* Status dropdown — lets the company accept or reject */}
                                     <select
                                         value={application.status}
@@ -117,25 +163,30 @@ export default function ApplicationsPage() {
                                     </select>
 
                                     {/* Opens the motivation letter modal */}
-                                    <button
-                                        onClick={() => setSelectedLetter(application.motivation_letter)}
-                                        className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors"
-                                    >
-                                        <Mail size={14} />
-                                        Voir la lettre de motivation
+                                    <button onClick={() => setSelectedLetter(application.motivation_letter)} className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-800 hover:underline transition-colors">
+                                        <Mail size={14} />Voir la lettre de motivation
                                     </button>
 
-                                    {/* Hits /api/cv/[studentId] which validates access
-                                        and redirects to a short-lived signed PDF URL */}
-                                    <a
-                                        href={`/api/cv/${application.student_id}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 hover:underline transition-colors"
-                                    >
-                                        <FileText size={14} />
-                                        Voir le CV
+                                    {/* Hits /api/cv/[studentId] which validates access and redirects to a short-lived signed PDF URL */}
+                                    <a href={`/api/cv/${application.student_id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 hover:underline transition-colors">
+                                        <FileText size={14} />Voir le CV
                                     </a>
+
+                                    {/* Evaluate button — only visible for accepted applications */}
+                                    {application.status === "accepted" && (
+                                        reviewedAppIds.has(application.id) ? (
+                                            <span className="flex items-center gap-1.5 text-sm text-green-600">
+                                                <Star size={14} fill="currentColor" /> Évalué
+                                            </span>
+                                        ) : (
+                                            <button
+                                                onClick={() => openEvalModal(application.id)}
+                                                className="flex items-center gap-1.5 text-sm text-yellow-600 hover:text-yellow-800 hover:underline transition-colors"
+                                            >
+                                                <Star size={14} />Évaluer l'étudiant
+                                            </button>
+                                        )
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -143,15 +194,12 @@ export default function ApplicationsPage() {
                 </div>
             </div>
 
-            {/* Motivation letter overlay.
-                Only shown when selectedLetter is not null (i.e. a button was clicked).
-                Clicking the grey backdrop or the ✕ button closes it. */}
+            {/* Motivation letter overlay */}
             {selectedLetter !== null && (
                 <div
-                    className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+                    className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4"
                     onClick={() => setSelectedLetter(null)}
                 >
-                    {/* stopPropagation prevents the click from bubbling up to the backdrop */}
                     <div
                         className="bg-white rounded-xl shadow-xl max-w-2xl w-full max-h-[80vh] flex flex-col"
                         onClick={(e) => e.stopPropagation()}
@@ -165,11 +213,81 @@ export default function ApplicationsPage() {
                                 <X size={20} />
                             </button>
                         </div>
-
-                        {/* overflow-y-auto = adds a scrollbar if the letter is very long */}
                         <p className="p-6 overflow-y-auto whitespace-pre-wrap text-gray-700 text-sm leading-relaxed">
                             {selectedLetter}
                         </p>
+                    </div>
+                </div>
+            )}
+
+            {/* Evaluation dialog */}
+            {evaluatingAppId !== null && (
+                <div
+                    className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center z-50 p-4"
+                    onClick={closeEvalModal}
+                >
+                    <div
+                        className="bg-white rounded-xl shadow-xl max-w-md w-full flex flex-col"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex justify-between items-center p-6 border-b">
+                            <h2 className="text-lg font-semibold">Évaluer l'étudiant</h2>
+                            <button onClick={closeEvalModal} className="text-gray-400 hover:text-gray-700 transition-colors rounded-md p-1 hover:bg-gray-100">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {reviewSuccess ? (
+                            <div className="p-6 text-center text-green-600 font-semibold">
+                                ✓ Évaluation envoyée avec succès !
+                            </div>
+                        ) : (
+                            <div className="p-6 flex flex-col gap-5">
+                                {/* Star rating */}
+                                <div>
+                                    <p className="text-sm font-medium text-gray-700 mb-2">Note (1-5)</p>
+                                    <div className="flex gap-1">
+                                        {[1, 2, 3, 4, 5].map((star) => (
+                                            <Star
+                                                key={star}
+                                                size={28}
+                                                className="cursor-pointer transition-colors"
+                                                fill={(hoverRating || rating) >= star ? "#f59e0b" : "none"}
+                                                stroke={(hoverRating || rating) >= star ? "#f59e0b" : "#d1d5db"}
+                                                onMouseEnter={() => setHoverRating(star)}
+                                                onMouseLeave={() => setHoverRating(0)}
+                                                onClick={() => setRating(star)}
+                                            />
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* Comment */}
+                                <div>
+                                    <label className="text-sm font-medium text-gray-700 mb-2 block">
+                                        Commentaire sur les performances
+                                    </label>
+                                    <textarea
+                                        rows={4}
+                                        placeholder="Décrivez les performances de l'étudiant..."
+                                        value={comment}
+                                        onChange={(e) => setComment(e.target.value)}
+                                        className="w-full text-sm border border-gray-300 rounded-lg p-3 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                    />
+                                </div>
+
+                                <div className="flex justify-end gap-2">
+                                    <Button variant="outline" onClick={closeEvalModal}>Annuler</Button>
+                                    <Button
+                                        onClick={handleSubmitReview}
+                                        disabled={rating === 0 || submittingReview}
+                                        className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                                    >
+                                        {submittingReview ? "Envoi..." : "Soumettre"}
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

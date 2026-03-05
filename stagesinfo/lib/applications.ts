@@ -1,14 +1,17 @@
 import { createClient } from './supabase/client'
-import { Application } from './types'
+import { Application, ApplicationWithOffer, Review } from './types'
 
 // Get all applications for a student
-export async function getApplicationsByStudent(studentId: string): Promise<Application[]> {
+export async function getApplicationsByStudent(studentId: string): Promise<ApplicationWithOffer[]> {
   const supabase = createClient()
   const { data, error } = await supabase
     .from('applications')
     .select(`
       *,
-      offer:offers(*),
+      offer:offers(
+        *,
+        company:companies!company_id(*)
+      ),
       student:students(*)
     `)
     .eq('student_id', studentId)
@@ -20,6 +23,34 @@ export async function getApplicationsByStudent(studentId: string): Promise<Appli
   }
 
   return data || []
+}
+
+export async function getReviewedApplicationFromStudent(studentId: string): Promise<(ApplicationWithOffer & { review: Review | null })[]> {
+  const supabase = createClient()
+  const { data, error } = await supabase
+    .from('applications')
+    .select(`
+      *,
+      offer:offers(
+        *,
+        company:companies!company_id(*)
+      ),
+      review:reviews(*)
+    `)
+    .eq('student_id', studentId)
+    .eq('status', 'accepted')
+    .order('applied_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching applications:', error)
+    throw error
+  }
+
+  // Supabase returns review as an array (one-to-many), so we take the first item
+  return (data || []).map(app => ({
+    ...app,
+    review: Array.isArray(app.review) ? (app.review[0] ?? null) : app.review,
+  }))
 }
 
 // Get all applications for an offer, with the applicant's name attached.
@@ -102,13 +133,14 @@ export async function updateApplicationStatus(
   status: string
 ): Promise<boolean> {
   const supabase = createClient()
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('applications')
     .update({ status })
     .eq('id', applicationId)
+    .select()
 
-  if (error) {
-    console.error('Error updating application status:', error)
+  if (error || !data || data.length === 0) {
+    console.error('Error updating application status or no rows affected:', error)
     return false
   }
 
@@ -186,4 +218,20 @@ export async function hasUserApplied(offerId: string, studentId: string): Promis
   }
 
   return !!data;
+}
+
+export async function deleteApplication(applicationId: string): Promise<boolean> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from('applications')
+    .delete()
+    .eq('id', applicationId)
+    .select();
+
+  if (error || !data || data.length === 0) {
+    console.error('Error deleting application or no rows affected:', error);
+    return false;
+  }
+
+  return true;
 }

@@ -25,13 +25,7 @@ export async function getOfferById(id: string): Promise<Offer | null> {
   return data
 }
 
-export async function getOffersFiltered({
-  title,
-  location,
-  sector,
-  page = 1,
-  limit = 10
-}: {
+export async function getOffersFiltered({title, location, sector, page = 1, limit = 10}: {
   title?: string,
   location?: string,
   sector?: string,
@@ -45,8 +39,8 @@ export async function getOffersFiltered({
     .from('offers')
     .select(`
       *,
-      company:companies(*)
-    `, { count: 'exact' })
+      company:companies!company_id(*) 
+    `, { count: 'exact' }) // company as the ALIAS, companies as the table name, and ! to tell to JOIN with company_id
     .eq('status', 'available');  // Only show available offers
 
   // Apply filters only if they have values

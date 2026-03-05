@@ -2,45 +2,33 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
-import { getApplicationsByStudent } from "@/lib/applications";
+import { getApplicationsByStudent, deleteApplication } from "@/lib/applications";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { Application, Offer, Profile } from "@/lib/types";
+import type { Profile, ApplicationWithOffer } from "@/lib/types";
 import { Building2, Calendar } from 'lucide-react';
+import { StatusBadge } from '@/components/ui/StatusBadge';
+import { formatDate } from '@/lib/format';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
-// Helper to get the right badge style based on the status
-function getStatusBadge(status: string) {
-    switch (status) {
-        case "accepted":
-            return <Badge className="bg-green-100 text-green-700 border-green-200">Acceptée</Badge>;
-        case "pending":
-            return <Badge className="bg-orange-100 text-orange-700 border-orange-200">En attente</Badge>;
-        case "rejected":
-            return <Badge className="bg-red-100 text-red-700 border-red-200">Refusée</Badge>;
-        default:
-            return <Badge variant="secondary">{status}</Badge>;
-    }
-}
 
-// Helper to format dates nicely
-function formatDate(dateString: string) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString("fr-FR", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-    });
-}
-
-// Extend the Application type to include the joined offer data
-interface ApplicationWithOffer extends Application {
-    offer?: Offer;
-}
 
 export default function CandidaturePage() {
     const [applications, setApplications] = useState<ApplicationWithOffer[]>([]);
     const [loading, setLoading] = useState(true);
+    const [pendingCount, setPendingCount] = useState(0);
+    const [acceptedCount, setAcceptedCount] = useState(0);
+    const [rejectedCount, setRejectedCount] = useState(0);
     const [user, setUser] = useState<Profile | null>(null);
     const router = useRouter();
 
@@ -56,6 +44,11 @@ export default function CandidaturePage() {
 
                 const data = await getApplicationsByStudent(currentUser.id);
                 setApplications(data);
+                if (data.length > 0) {
+                    setPendingCount(data.filter((application) => application.status === "pending").length);
+                    setAcceptedCount(data.filter((application) => application.status === "accepted").length);
+                    setRejectedCount(data.filter((application) => application.status === "rejected").length);
+                }
             } catch (error) {
                 console.error("Erreur lors du chargement des candidatures:", error);
             } finally {
@@ -65,6 +58,21 @@ export default function CandidaturePage() {
         fetchData();
     }, [router]);
 
+    async function handleRetirerApplication(applicationId: string) {
+        console.log("Retrait de la candidature:", applicationId);
+        try {
+            const success = await deleteApplication(applicationId);
+            console.log(success)
+            if (success) {
+                setApplications(prev => prev.filter(app => app.id !== applicationId));
+                setPendingCount(prev => Math.max(0, prev - 1));
+            } else {
+                console.error("Erreur lors de la suppression de la candidature.");
+            }
+        } catch (error) {
+            console.error("Erreur inattendue:", error);
+        }
+    }
     if (loading) {
         return <p>Chargement...</p>;
     }
@@ -77,12 +85,32 @@ export default function CandidaturePage() {
                     Suivez l'état de vos candidatures en temps réel.
                 </p>
 
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                    <Card className="flex flex-col items-center justify-center p-6 shadow-sm">
+                        <CardContent className="p-0 text-center space-y-1">
+                            <p className="text-3xl font-bold">{pendingCount}</p>
+                            <p className="text-sm ">Attente</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="flex flex-col items-center justify-center p-6 shadow-sm">
+                        <CardContent className="p-0 text-center space-y-1">
+                            <p className="text-3xl text-green-600 font-bold">{acceptedCount}</p>
+                            <p className="text-sm ">Accepté</p>
+                        </CardContent>
+                    </Card>
+                    <Card className="flex flex-col items-center justify-center p-6 shadow-sm">
+                        <CardContent className="p-0 text-center space-y-1">
+                            <p className="text-3xl text-red-600 font-bold">{rejectedCount}</p>
+                            <p className="text-sm ">Refusé</p>
+                        </CardContent>
+                    </Card>
+                </div>
                 <Card>
                     {/* Table header */}
                     <CardHeader>
                         <div className="grid grid-cols-[2fr_1fr_1fr_auto] gap-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                             <span>Poste & Entreprise</span>
-                            <span>Date d&apos;envoi</span>
+                            <span>Date d'envoi</span>
                             <span>Statut</span>
                             <span>Action</span>
                         </div>
@@ -123,13 +151,37 @@ export default function CandidaturePage() {
 
                                     {/* Statut */}
                                     <div>
-                                        {getStatusBadge(application.status)}
+                                        <StatusBadge status={application.status} />
                                     </div>
 
                                     {/* Action */}
-                                    <Button variant="ghost" size="icon" onClick={() => router.push(`/offer/${application.offer_id}`)}>
-                                        ›
-                                    </Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button
+                                                className="bg-red-500 hover:bg-red-600 px-2.5"
+                                                disabled={application.status !== "pending"}
+                                            >
+                                                Retirer
+                                            </Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Retirer la candidature ?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Cette action est irréversible. Votre candidature sera définitivement supprimée et l'entreprise n'y aura plus accès.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                <AlertDialogAction
+                                                    onClick={() => handleRetirerApplication(application.id)}
+                                                    className="bg-red-500 hover:bg-red-600 text-white"
+                                                >
+                                                    Confirmer
+                                                </AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
                                 </div>
                             ))
                         )}

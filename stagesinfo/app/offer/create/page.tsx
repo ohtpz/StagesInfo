@@ -53,7 +53,6 @@ export default function CreateOfferPage() {
             const skillsData = await getAllSkills();
             setAllSkills(skillsData);
         };
-        // Problem here is that Skills is in the student file, not on its own.
         fetchUserAndCompany();
         fetchSkills();
     }, []);

@@ -110,8 +110,18 @@ export default function OfferDetailPage() {
         );
     }
 
-
-
+    const badgeConfig = (() => {
+        switch (offer.status) {
+            case 'available':
+                return { className: 'bg-green-100 text-green-800', text: 'Disponible' };
+            case 'expired':
+                return { className: 'bg-orange-100 text-orange-800', text: 'Expiré' };
+            case 'filled':
+                return { className: 'bg-blue-100 text-blue-800', text: 'Pourvue' };
+            default:
+                return { className: 'bg-red-100 text-red-800', text: 'Non disponible' };
+        }
+    })();
 
     const handleDelete = async () => {
         if (confirm('Vous êtes sûr de vouloir supprimer cette offre ?')) {
@@ -124,12 +134,10 @@ export default function OfferDetailPage() {
 
     const handleSubmit = async (e: any) => {
         e.preventDefault();
-        // Both should always be set by the time the button is visible,
-        // but TypeScript can't know that — guard here to narrow the types.
         if (!currentUser || !offer) return;
         try {
             setSubmitting(true);
-            setSubmitError(null);   
+            setSubmitError(null);
             setSubmitSuccess(false);
             const result = await createApplication(currentUser.id, offer.id, motivationLetter);
             if (result) {
@@ -155,8 +163,8 @@ export default function OfferDetailPage() {
                     {/* Title and Status */}
                     <div>
                         <h1 className="text-4xl font-bold text-gray-900 mb-4">{offer.title}</h1>
-                        <Badge className="bg-green-100 text-green-800 py-2 px-4 text-sm font-medium">
-                            Disponible
+                        <Badge className={`py-2 px-4 text-sm font-medium ${badgeConfig.className}`}>
+                            {badgeConfig.text}
                         </Badge>
 
                     </div>

@@ -34,16 +34,23 @@ export interface Company {
   profile?: Profile
 }
 
+export type ApplicationStatus = 'pending' | 'accepted' | 'rejected';
+
 // Applications table
 export interface Application {
   id: string
   student_id: string
   offer_id: string
   applied_at: string
-  status: 'application_status'
+  status: ApplicationStatus
   motivation_letter: string
   created_at: string
-  updated_at: string  
+  updated_at: string
+}
+
+// Applications with joined offers
+export interface ApplicationWithOffer extends Application {
+  offer?: Offer;
 }
 
 // Students table
