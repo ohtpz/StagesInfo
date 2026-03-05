@@ -9,7 +9,7 @@ import { createServiceClient } from '@/lib/supabase/service'
 //   1. Check that the visitor is logged in
 //   2. Look up their role (student, company, or admin)
 //   3. Decide if they are allowed to see this CV
-//   4. If yes, generate a short-lived download link (30 seconds)
+//   4. If yes, generate a short-lived download link (10 seconds)
 //   5. Redirect the browser to that link so the PDF opens
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ studentId: string }> }) {

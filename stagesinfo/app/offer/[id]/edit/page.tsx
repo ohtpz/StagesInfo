@@ -7,13 +7,20 @@ import { getCompanyByOwner } from "@/lib/companies";
 import BackButton from "@/components/ui/backButton";
 import { updateOffer, getOfferById } from "@/lib/offers";
 import { useParams } from "next/navigation";
-
+import { editOfferSkill, getAllSkills, getOfferSkills } from "@/lib/skills";
+import { Skill } from "@/lib/types";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 export default function UpdateOfferPage() {
     const router = useRouter();
     const [profile, setProfile] = useState<Profile | null>(null);
     const [company, setCompany] = useState<Company | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [offerSkills, setOfferSkills] = useState<Skill[]>([]);
+    const [allSkills, setAllSkills] = useState<Skill[]>([]);
+    const [numSkills, setNumSkills] = useState(0);
+    const [selectedSkillId, setSelectedSkillId] = useState("");
     const [formData, setFormData] = useState({
         title: "",
         description: "",
@@ -66,8 +73,16 @@ export default function UpdateOfferPage() {
             });
             setLoading(false);
         };
+
+        const fetchSkillsFromOffer = async () => {
+            setOfferSkills(await getOfferSkills(idParam));
+            setAllSkills(await getAllSkills());
+            setNumSkills(offerSkills.length);
+
+        }
         fetchOffer();
         fetchUserAndCompany();
+        fetchSkillsFromOffer();
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -101,17 +116,40 @@ export default function UpdateOfferPage() {
             status: formData.status
         });
 
-
-        
-        if (!result) {
+        const resultSkills = await editOfferSkill(idParam, offerSkills.map(skill => skill.id));
+        console.log(resultSkills);
+        if (!result || !resultSkills) {
             setError("Erreur lors de la création de l'offre");
             setLoading(false);
             return;
         }
 
         setLoading(false);
-        router.push('/dashboard');
+        router.push(`/dashboard`);
     }
+
+    const handleAddSkill = async () => {
+       if(numSkills >= 5) {
+            setError("Vous avez atteint le nombre maximum de compétences");
+            return;
+        }
+        if(selectedSkillId === "") {
+            setError("Veuillez sélectionner une compétence");
+            return;
+        }
+        const skillToAdd = allSkills.find(s => s.id === parseInt(selectedSkillId)); // parse the id into an integer
+        if (!skillToAdd) return;
+        setOfferSkills([...offerSkills, skillToAdd]);
+        setNumSkills(numSkills + 1);
+        setSelectedSkillId("");
+    }
+    const handleRemoveSkill = async (skillId: number) => {
+        setOfferSkills(offerSkills.filter((skill) => skill.id !== skillId));
+        setNumSkills(numSkills - 1);
+        setSelectedSkillId("");
+
+    }    
+    
     return (
         <div className="min-h-screen  py-8 px-4 sm:px-6 lg:px-8">
             <div className="max-w-2xl mx-auto">
@@ -245,6 +283,50 @@ export default function UpdateOfferPage() {
                                 <option value="expired">Expiré</option>
                             </select>
                         </div>
+
+                        <div>
+                            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
+                                    Skills (Max 5)
+                            </label>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                    {offerSkills.length > 0 ? (
+                                        offerSkills.map(skill => (
+                                            <span key={skill.id} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                                {skill.name}
+                                                <button
+                                                    onClick={() => handleRemoveSkill(skill.id)}
+                                                    className="ml-2 text-blue-600 hover:text-blue-900 focus:outline-none"
+                                                    >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <p className="text-gray-500 text-sm italic">Aucune compétence ajoutée</p>
+                                    )}
+                                </div>
+                            </div>
+                             <select
+                                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={selectedSkillId}
+                                onChange={(e) => setSelectedSkillId(e.target.value)}
+                            >
+                                {/* Add skills here */}
+                                <option value="">Sélectionner une compétence...</option>
+                                {(() => {
+                                const availableSkills = allSkills.filter((skill) => {
+                                    const alreadyAdded = offerSkills.find((offerSkill) => offerSkill.id === skill.id)
+                                    return !alreadyAdded
+                                })
+
+                                return availableSkills.map((skill) => (
+                                    <option key={skill.id} value={skill.id}>{skill.name}</option>
+                                ))
+                                 })()}
+                            </select>
+                            <Button type="button" onClick={handleAddSkill} disabled={!selectedSkillId} className="mt-2 bg-blue-600 hover:bg-blue-700">
+                                Ajouter
+                            </Button>
                         <button
                             type="submit"
                             className="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-all duration-200 shadow-md hover:shadow-lg"

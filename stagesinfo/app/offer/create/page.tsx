@@ -1,11 +1,14 @@
 "use client"
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { Profile, Company } from "@/lib/types";
+import type { Profile, Company, Skill } from "@/lib/types";
 import { getCurrentUser } from "@/lib/auth";
 import { getCompanyByOwner } from "@/lib/companies";
 import BackButton from "@/components/ui/backButton";
 import { createOffer } from "@/lib/offers";
+import { addOfferSkill, getAllSkills } from "@/lib/skills";
+import { X } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function CreateOfferPage() {
     const router = useRouter();
@@ -22,9 +25,9 @@ export default function CreateOfferPage() {
         location: "",
         sector: "",
     });
-    const [skills, setSkills] = useState<string[]>([]);
-    const [skillInput, setSkillInput] = useState("");
-    const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+    const [allSkills, setAllSkills] = useState<Skill[]>([]);
+    const [offerSkills, setOfferSkills] = useState<Skill[]>([]);
+    const [selectedSkillId, setSelectedSkillId] = useState<string>("");
     const [numSkills, setNumSkills] = useState(0); // max 5 skills
 
     useEffect(() => {
@@ -46,13 +49,13 @@ export default function CreateOfferPage() {
             setCompany(companyData);
             setLoading(false);
         };
-        // const fetchSkills = async () => {
-        //     const skillsData = await getSkills();
-        //     setSkills(skillsData);
-        // };
+        const fetchSkills = async () => {
+            const skillsData = await getAllSkills();
+            setAllSkills(skillsData);
+        };
         // Problem here is that Skills is in the student file, not on its own.
         fetchUserAndCompany();
-        // fetchSkills();
+        fetchSkills();
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -87,7 +90,8 @@ export default function CreateOfferPage() {
             status: 'available'
         });
 
-        if (!result) {
+        const offerSkillsResult = await addOfferSkill(result.id, offerSkills.map(skill => skill.id));
+        if (!result || !offerSkillsResult) {
             setError("Erreur lors de la création de l'offre");
             setLoading(false);
             return;
@@ -95,6 +99,29 @@ export default function CreateOfferPage() {
 
         setLoading(false);
         router.push('/dashboard');
+    }
+
+    const handleAddSkill = async () => {
+        if(numSkills >= 5) {
+            setError("Vous avez atteint le nombre maximum de compétences");
+            return;
+        }
+        if(selectedSkillId === "") {
+            setError("Veuillez sélectionner une compétence");
+            return;
+        }
+        const skillToAdd = allSkills.find(s => s.id === parseInt(selectedSkillId)); // parse the id into an integer
+        if (!skillToAdd) return;
+        setOfferSkills([...offerSkills, skillToAdd]);
+        setNumSkills(numSkills + 1);
+        setSelectedSkillId("");
+        
+    }
+    const handleRemoveSkill = async (skillId: number) => {
+        setOfferSkills(offerSkills.filter((skill) => skill.id !== skillId));
+        setNumSkills(numSkills - 1);
+        setSelectedSkillId("");
+
     }
     return (
         <div className="min-h-screen  py-8 px-4 sm:px-6 lg:px-8">
@@ -219,15 +246,44 @@ export default function CreateOfferPage() {
                             <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">
                                 Skills (Max 5)
                             </label>
+                            <div className="flex flex-wrap gap-2 mb-4">
+                                {offerSkills.length > 0 ? (
+                                    offerSkills.map(skill => (
+                                        <span key={skill.id} className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                            {skill.name}
+                                            <button
+                                                onClick={() => handleRemoveSkill(skill.id)}
+                                                className="ml-2 text-blue-600 hover:text-blue-900 focus:outline-none"
+                                            >
+                                                <X className="h-3 w-3" />
+                                            </button>
+                                        </span>
+                                    ))
+                                ) : (
+                                    <p className="text-gray-500 text-sm italic">Aucune compétence ajoutée</p>
+                                )}
+                            </div>
                             <select
-                                id="status"
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                value={formData.status}
-                                required
-                                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all outline-none"
+                                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                value={selectedSkillId}
+                                onChange={(e) => setSelectedSkillId(e.target.value)}
                             >
                                 {/* Add skills here */}
+                                <option value="">Sélectionner une compétence...</option>
+                                {(() => {
+                                const availableSkills = allSkills.filter((skill) => {
+                                    const alreadyAdded = offerSkills.find((offerSkill) => offerSkill.id === skill.id)
+                                    return !alreadyAdded
+                                })
+
+                                return availableSkills.map((skill) => (
+                                    <option key={skill.id} value={skill.id}>{skill.name}</option>
+                                ))
+                                 })()}
                             </select>
+                            <Button type="button" onClick={handleAddSkill} disabled={!selectedSkillId} className="mt-2 bg-blue-600 hover:bg-blue-700">
+                                Ajouter
+                            </Button>
                         </div>
                         <button
                             type="submit"

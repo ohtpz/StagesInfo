@@ -3,13 +3,14 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { getOfferById, deleteOffer } from "@/lib/offers";
-import type { Offer, Profile } from "@/lib/types";
+import type { Offer, Profile, Skill } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import BackButton from "@/components/ui/backButton";
 import { submitApplicationWithCV, hasUserApplied, createApplication } from "@/lib/applications";
 import { getCurrentUser } from "@/lib/auth";
 import { getStudentCV } from "@/lib/students";
+import { getOfferSkills } from "@/lib/skills";
 
 export default function OfferDetailPage() {
     const params = useParams();
@@ -23,6 +24,7 @@ export default function OfferDetailPage() {
     const [currentUser, setCurrentUser] = useState<Profile | null>(null);
     const [hasCv, setHasCv] = useState<boolean>(false);
     const [motivationLetter, setMotivationLetter] = useState<string>("");
+    const [offerSkills, setOfferSkills] = useState<Skill[]>([]);
     useEffect(() => {
         const fetchOffer = async () => {
             try {
@@ -69,7 +71,21 @@ export default function OfferDetailPage() {
     }, [offer]);
 
 
+    useEffect(() => {
+        const idOffer = params.id as string;
+        const fetchSkills = async () => {
+            try {
+                const skills = await getOfferSkills(idOffer);
+                setOfferSkills(skills);
+            } catch (error) {
+                console.error("Error fetching skills:", error);
+            }
+        };
 
+        if (offer) {
+            fetchSkills();
+        }
+    }, [offer]);
     if (loading) {
         return (
             <>
@@ -179,26 +195,20 @@ export default function OfferDetailPage() {
                             {offer.description}
                         </div>
                     </div>
-                    {/* <hr />
-                    Compétences requises - Placeholder for now
+                    <hr />
                     <div>
                         <h2 className="text-2xl font-bold text-gray-900 mb-4">Compétences requises</h2>
                         <div className="flex flex-wrap gap-2">
-                            These would come from offer.skills when available
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                                React
-                            </Badge>
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                                TypeScript
-                            </Badge>
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-2 rounded-full text-sm font-medium">
-                                CSS
-                            </Badge>
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-2 rounded-full text-sm font-medium">
-                                Git
-                            </Badge>
+                            {/* These would come from offer.skills when available */}
+                            {offerSkills.length > 0 ? offerSkills.map(skill => {
+                                return (
+                                    <Badge key={skill.id} variant="secondary" className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                                        {skill.name}
+                                    </Badge>
+                                )
+                            }) : (<span className="text-gray-500">Aucune compétence requise</span>)}
                         </div>
-                    </div> */}
+                    </div>
                     <hr />
                     {/* Détails du stage Section */}
                     <div>

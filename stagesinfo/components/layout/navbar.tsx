@@ -59,9 +59,17 @@ export function Navbar() {
           {user ? (
             <>
               {user.role === 'student' ? (
-                <Link href="/profile" className="nav-link">
-                  Profile
-                </Link>
+                <>
+                  <Link href="/candidatures" className="nav-link">
+                    Mes candidatures
+                  </Link>
+                  <Link href="/evaluations" className="nav-link">
+                    Mes evaluations
+                  </Link>
+                  <Link href="/profile" className="nav-link">
+                    Profile
+                  </Link>
+                </>
               ) : (
                 <Link href="/dashboard" className="nav-link">
                   Dashboard

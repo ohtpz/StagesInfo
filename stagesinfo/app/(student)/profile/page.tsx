@@ -4,7 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/client";
 import { ChangeEvent, useEffect, useState } from "react";
-import { getStudentProfile, updateStudentProfile, getAllSkills, getStudentSkills, addStudentSkill, removeStudentSkill } from "@/lib/students";
+import { getStudentProfile, updateStudentProfile } from "@/lib/students";
+import { getAllSkills, getStudentSkills, addStudentSkill, removeStudentSkill } from "@/lib/skills";
 import { Profile, Skill } from "@/lib/types";
 import { useRouter } from "next/navigation";
 import { FileText, X } from "lucide-react";
@@ -364,7 +365,8 @@ export default function ProfilePage() {
                                 return availableSkills.map((skill) => (
                                     <option key={skill.id} value={skill.id}>{skill.name}</option>
                                 ))
-                            })()}
+                            })()} {/* () calls the function above immediately */}
+
                         </select>
                         <Button onClick={handleAddSkill} disabled={!selectedSkillId}>
                             Ajouter
