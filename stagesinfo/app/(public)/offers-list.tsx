@@ -233,7 +233,7 @@ export function OffersList() {
                                             <p>📍 Lieu : {offer.location}</p>
                                             <p>🏢 Secteur : {offer.sector}</p>
                                             <p>⏱️ Durée : {offer.duration}</p>
-                                            <p>📅 Dates : {new Date(offer.start_date).toLocaleDateString('fr-FR')} au {new Date(offer.end_date).toLocaleDateString('fr-FR')}</p>
+                                            <p>📅 Dates : {offer.start_date ? new Date(offer.start_date).toLocaleDateString('fr-FR') : 'N/A'} au {offer.end_date ? new Date(offer.end_date).toLocaleDateString('fr-FR') : 'N/A'}</p>
                                         </div>
                                     </CardContent>
                                     <CardFooter>

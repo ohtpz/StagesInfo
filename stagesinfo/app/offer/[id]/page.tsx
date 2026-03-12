@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { getOfferById, deleteOffer } from "@/lib/offers";
+import { getOfferById, deleteOffer, isOwnerOfOffer } from "@/lib/offers";
 import type { Offer, Profile, Skill } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ export default function OfferDetailPage() {
     const [hasCv, setHasCv] = useState<boolean>(false);
     const [motivationLetter, setMotivationLetter] = useState<string>("");
     const [offerSkills, setOfferSkills] = useState<Skill[]>([]);
+    const [isOwner, setIsOwner] = useState<boolean>(false);
     useEffect(() => {
         const fetchOffer = async () => {
             try {
@@ -43,49 +44,47 @@ export default function OfferDetailPage() {
         }
     }, [params.id]);
 
-    // Fetch current user and check if already applied
+    // Fetch user data, skills, and check application/ownership
     useEffect(() => {
-        const checkUserAndApplication = async () => {
+        const fetchData = async () => {
+            if (!offer) return;
+
             try {
+                // 1. Get current user
                 const user = await getCurrentUser();
                 setCurrentUser(user);
-                if (user.role === 'student') {
-                    const cvPath = await getStudentCV(user.id);
-                    if (cvPath) {
-                        setHasCv(true);
-                    }
-                }
-                if (user && offer) {
-                    const applied = await hasUserApplied(offer.id, user.id);
-                    setAlreadyApplied(applied);
-                }
 
-            } catch (error) {
-                console.error("Error fetching user or checking application:", error);
-            }
-        };
-
-        if (offer) {
-            checkUserAndApplication();
-        }
-    }, [offer]);
-
-
-    useEffect(() => {
-        const idOffer = params.id as string;
-        const fetchSkills = async () => {
-            try {
+                // 2. Fetch skills
+                const idOffer = params.id as string;
                 const skills = await getOfferSkills(idOffer);
                 setOfferSkills(skills);
+
+                if (user) {
+                    // 3. Check if user is the owner of the offer
+                    const ownerStatus = await isOwnerOfOffer(offer.id, user.id);
+                    setIsOwner(ownerStatus);
+
+                    // 4. If student, check CV and application status
+                    if (user.role === 'student') {
+                        const cvPath = await getStudentCV(user.id);
+                        if (cvPath) {
+                            setHasCv(true);
+                        }
+
+                        const applied = await hasUserApplied(offer.id, user.id);
+                        setAlreadyApplied(applied);
+                    }
+                }
             } catch (error) {
-                console.error("Error fetching skills:", error);
+                console.error("Error fetching additional offer data:", error);
             }
         };
 
-        if (offer) {
-            fetchSkills();
-        }
-    }, [offer]);
+        fetchData();
+    }, [offer, params.id]);
+
+
+
     if (loading) {
         return (
             <>
@@ -135,6 +134,10 @@ export default function OfferDetailPage() {
     const handleSubmit = async (e: any) => {
         e.preventDefault();
         if (!currentUser || !offer) return;
+        if (motivationLetter.trim().length < 10) {
+            setSubmitError("Veuillez saisir une lettre de motivation d'au moins 10 caractères");
+            return;
+        }
         try {
             setSubmitting(true);
             setSubmitError(null);
@@ -229,13 +232,13 @@ export default function OfferDetailPage() {
                             <div className="flex gap-2">
                                 <p className="text-sm font-medium text-gray-600 w-32">Date début:</p>
                                 <p className="text-base text-gray-900">
-                                    {new Date(offer.start_date).toLocaleDateString('fr-FR')}
+                                    {offer.start_date ? new Date(offer.start_date).toLocaleDateString('fr-FR') : 'N/A'}
                                 </p>
                             </div>
                             <div className="flex gap-2">
                                 <p className="text-sm font-medium text-gray-600 w-32">Date fin:</p>
                                 <p className="text-base text-gray-900">
-                                    {new Date(offer.end_date).toLocaleDateString('fr-FR')}
+                                    {offer.end_date ? new Date(offer.end_date).toLocaleDateString('fr-FR') : 'N/A'}
                                 </p>
                             </div>
                         </div>
@@ -339,7 +342,7 @@ export default function OfferDetailPage() {
                             )}
                         </div>
                     )}
-                    {currentUser?.role === 'company' && (
+                    {(isOwner || currentUser?.role === 'admin') && (
                         <div>
                             <h2 className="text-2xl font-bold text-gray-900 mb-4">Candidatures</h2>
                             <div className="space-y-3 flex justify-center gap-3">

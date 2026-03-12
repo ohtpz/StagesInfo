@@ -35,6 +35,21 @@ export async function getStudentProfile(userId: string) {
     }
 }
 
+
+export async function getAllStudent() {
+    const supabase = createClient()
+
+    const { data, error } = await supabase
+        .from('students')
+        .select('*')
+
+    if (error) {
+        console.error('Error fetching students:', error)
+        return null
+    }
+    return data || null
+}
+
 export async function getStudentCV(userId: string) {
     const supabase = createClient()
 

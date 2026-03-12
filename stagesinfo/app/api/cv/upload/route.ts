@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createServiceClient } from '@/lib/supabase/service'
-// AI generated Code, server code
+// Claude AI generated Code, server code
 
 // This API route handles uploading (or replacing) a student's CV.
 // URL: POST /api/cv/upload

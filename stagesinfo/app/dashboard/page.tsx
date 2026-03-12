@@ -25,23 +25,25 @@ export default function DashboardPage() {
         fetchUser();
     }, [router]);
 
-    if (loading) {
-        return <p>Chargement...</p>;
+    useEffect(() => {
+        if (loading) return;
+        if (!user) {
+            router.push('/connexion');
+        } else if (user.role === 'student') {
+            router.push('/');
+        }
+    }, [loading, user, router]);
+
+    if (loading || !user || user.role === 'student') {
+        return null;
     }
     
-    if (!user) {
-        router.push('/connexion');
-        return;
-    }
-
     const renderDashboard = () => {
-        switch (user.role) {
-            case 'admin':
-                return <AdminDashboard user={user} />;
-            case 'company':
-                return <CompanyDashboard user={user} />;
-            default:
-                return <p>Rôle non reconnu</p>;
+        if (user.role == 'admin') {
+            return <AdminDashboard user={user} />;
+        }
+        else if (user.role == 'company') {
+            return <CompanyDashboard user={user} />;
         }
     };
 

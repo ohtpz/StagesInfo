@@ -1,5 +1,6 @@
 import { createClient } from './supabase/client'
 import { Offer } from './types'
+import type { TablesInsert, TablesUpdate } from './types'
 
 
 // Get a single offer by ID with company information
@@ -25,7 +26,7 @@ export async function getOfferById(id: string): Promise<Offer | null> {
   return data
 }
 
-export async function getOffersFiltered({title, location, sector, page = 1, limit = 10}: {
+export async function getOffersFiltered({ title, location, sector, page = 1, limit = 10 }: {
   title?: string,
   location?: string,
   sector?: string,
@@ -89,7 +90,13 @@ export async function getUniqueSectors(): Promise<string[]> {
   }
 
   // Extract unique sectors from the data
-  const uniqueSectors = [...new Set(data?.map(offer => offer.sector) || [])];
+  const sectors: string[] = [];
+  data.forEach(offer => {
+    if (offer.sector && !sectors.includes(offer.sector)) {
+      sectors.push(offer.sector);
+    }
+  });
+  const uniqueSectors = sectors;
 
   return uniqueSectors;
 }
@@ -109,7 +116,28 @@ export async function getOffersByCompany(companyId: string): Promise<Offer[] | n
   return data || null
 }
 
-export async function createOffer(offer: Partial<Offer>) {
+export async function isOwnerOfOffer(offerId: string, userId: string) {
+  const supabase = createClient()
+
+  // inner join means that it only returns the rows that have a match in both tables
+  const { data, error } = await supabase
+    .from('offers') 
+    .select(`
+      company_id,
+      companies!inner ( 
+        owner_id
+      )
+    `)
+    .eq('id', offerId)
+    .single()
+
+  if (error) {
+    console.error('Error fetching offer : ', error)
+    return false
+  }
+  return data.companies.owner_id === userId
+}
+export async function createOffer(offer: TablesInsert<'offers'>) {
   const supabase = createClient()
 
   const { data, error } = await supabase
@@ -125,7 +153,7 @@ export async function createOffer(offer: Partial<Offer>) {
   return data || null
 }
 
-export async function updateOffer(id: string, offer: Partial<Offer>) {
+export async function updateOffer(id: string, offer: TablesUpdate<'offers'>) {
   const supabase = createClient()
 
   const { data, error } = await supabase

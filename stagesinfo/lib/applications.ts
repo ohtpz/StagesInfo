@@ -1,5 +1,5 @@
 import { createClient } from './supabase/client'
-import { Application, ApplicationWithOffer, Review } from './types'
+import { Application, ApplicationWithOffer, Profile, Review } from './types'
 
 // Get all applications for a student
 export async function getApplicationsByStudent(studentId: string): Promise<ApplicationWithOffer[]> {
@@ -81,11 +81,11 @@ export async function getApplicationsByOffer(offerId: string): Promise<Applicati
   const studentIds = applications.map((app) => app.student_id)
   const { data: profiles } = await supabase
     .from('profiles')
-    .select('id, first_name, last_name')
+    .select('*')
     .in('id', studentIds)
 
   // Step 3: build a lookup map { profileId → profile } for fast access
-  const profileMap: Record<string, { first_name: string; last_name: string }> = {}
+  const profileMap: Record<string, Profile> = {}
   for (const profile of profiles || []) {
     profileMap[profile.id] = profile
   }
@@ -130,7 +130,7 @@ export async function createApplication(
 // Update application status
 export async function updateApplicationStatus(
   applicationId: string,
-  status: string
+  status: "pending" | "accepted" | "rejected"
 ): Promise<boolean> {
   const supabase = createClient()
   const { data, error } = await supabase

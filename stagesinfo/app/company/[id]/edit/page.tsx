@@ -39,8 +39,8 @@ export default function EditCompany() {
             setCompany(companyData);
             setFormData({
                 name: companyData.name,
-                address: companyData.address,
-                sector: companyData.sector,
+                address: companyData.address ?? "",
+                sector: companyData.sector ?? "",
             });
             setLoading(false);
         };

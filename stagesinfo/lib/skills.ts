@@ -17,7 +17,7 @@ export async function getAllSkills(): Promise<Skill[]> {
     return data || []
 }
 
-export async function getSkillById(skillId: number): Promise<Skill> {
+export async function getSkillById(skillId: number): Promise<Skill | null> {
     const supabase = createClient()
 
     const { data, error } = await supabase

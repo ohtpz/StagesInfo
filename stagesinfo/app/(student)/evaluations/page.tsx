@@ -76,7 +76,7 @@ export default function EvaluationPage() {
                                             </div>
                                         </div>
                                         <Badge variant="outline" className="text-xs shrink-0">
-                                            {app.offer?.start_date ? `${formatDate(app.offer.start_date)} - ${formatDate(app.offer.end_date)}` : "—"}
+                                            {app.offer?.start_date ? `${formatDate(app.offer.start_date)} - ${formatDate(app.offer.end_date ?? "")}` : "—"}
                                         </Badge>
                                     </div>
 

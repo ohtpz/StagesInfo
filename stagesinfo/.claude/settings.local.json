@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"C:\\\\Users\\\\Admin\\\\Desktop\\\\Projet\\\\StagesInfo\\\\stagesinfo\" && npx tsc --noEmit 2>&1)"
+    ]
+  }
+}

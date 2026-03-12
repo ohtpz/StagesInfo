@@ -33,7 +33,8 @@ export default function ProfilePage() {
     const [allSkills, setAllSkills] = useState<Skill[]>([]);
     const [mySkills, setMySkills] = useState<Skill[]>([]);
     const [selectedSkillId, setSelectedSkillId] = useState<string>("");
-
+    const [skillCount, setSkillCount] = useState<number>(0);
+    const SKILL_LIMIT = 5;
     const supabase = createClient();
 
     useEffect(() => {
@@ -59,7 +60,7 @@ export default function ProfilePage() {
 
             const studentSkills = await getStudentSkills(authUser.id);
             setMySkills(studentSkills);
-
+            setSkillCount(studentSkills.length);
             setLoading(false);
         };
 
@@ -184,6 +185,7 @@ export default function ProfilePage() {
     // --- Skills Handlers ---
     const handleAddSkill = async () => {
         if (!selectedSkillId || !user) return;
+        if(skillCount >= SKILL_LIMIT) return;
         const skillIdNum = parseInt(selectedSkillId);
         const skillToAdd = allSkills.find(s => s.id === skillIdNum);
         if (!skillToAdd) return;
@@ -196,6 +198,7 @@ export default function ProfilePage() {
 
         try {
             await addStudentSkill(user.id, skillIdNum);
+            setSkillCount(skillCount + 1);
             setMySkills([...mySkills, skillToAdd]);
             setSelectedSkillId("");
         } catch (error) {
@@ -207,6 +210,7 @@ export default function ProfilePage() {
         if (!user) return;
         try {
             await removeStudentSkill(user.id, skillId);
+            setSkillCount(skillCount - 1);
             setMySkills(mySkills.filter(s => s.id !== skillId));
         } catch (error) {
             console.error(error);
@@ -217,6 +221,7 @@ export default function ProfilePage() {
 
     const hasCV = !!user?.cv_path; // checks if the user has a CV path, !! meaning if the variable is allocated it returns true, if there was only 1 ! it would return false
 
+    console.log(skillCount)
 
     return (
         <div className="container mx-auto py-10 space-y-8 max-w-4xl">
@@ -327,7 +332,7 @@ export default function ProfilePage() {
             {/* Skills Section */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Mes Compétences</CardTitle>
+                    <CardTitle>Mes Compétences (Max 5)</CardTitle>
                     <CardDescription>Ajoutez les technologies que vous maîtrisez</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -368,7 +373,7 @@ export default function ProfilePage() {
                             })()} {/* () calls the function above immediately */}
 
                         </select>
-                        <Button onClick={handleAddSkill} disabled={!selectedSkillId}>
+                        <Button onClick={handleAddSkill} disabled={(!selectedSkillId || skillCount >= SKILL_LIMIT)}>
                             Ajouter
                         </Button>
                     </div>

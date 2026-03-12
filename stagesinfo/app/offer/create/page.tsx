@@ -89,8 +89,13 @@ export default function CreateOfferPage() {
             status: 'available'
         });
 
+        if (!result) {
+            setError("Erreur lors de la création de l'offre");
+            setLoading(false);
+            return;
+        }
         const offerSkillsResult = await addOfferSkill(result.id, offerSkills.map(skill => skill.id));
-        if (!result || !offerSkillsResult) {
+        if (!offerSkillsResult) {
             setError("Erreur lors de la création de l'offre");
             setLoading(false);
             return;

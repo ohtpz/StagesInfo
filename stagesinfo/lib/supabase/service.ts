@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '@/lib/types'
 
 // This is a special "super admin" Supabase client.
 // It uses the secret service key, which bypasses all security rules (RLS).
@@ -21,7 +22,7 @@ export function createServiceClient() {
 
     // persistSession: false means this client doesn't store any user session.
     // It acts as a neutral "admin" with no identity.
-    return createClient(url, serviceKey, {
+    return createClient<Database>(url, serviceKey, {
         auth: { persistSession: false }
     })
 }

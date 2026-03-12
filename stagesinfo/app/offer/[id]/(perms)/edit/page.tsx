@@ -1,9 +1,8 @@
 "use client"
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import type { Profile, Company } from "@/lib/types";
+import type { Profile } from "@/lib/types";
 import { getCurrentUser } from "@/lib/auth";
-import { getCompanyByOwner } from "@/lib/companies";
 import BackButton from "@/components/ui/backButton";
 import { updateOffer, getOfferById } from "@/lib/offers";
 import { useParams } from "next/navigation";
@@ -14,7 +13,6 @@ import { Button } from "@/components/ui/button";
 export default function UpdateOfferPage() {
     const router = useRouter();
     const [profile, setProfile] = useState<Profile | null>(null);
-    const [company, setCompany] = useState<Company | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [offerSkills, setOfferSkills] = useState<Skill[]>([]);
@@ -44,13 +42,6 @@ export default function UpdateOfferPage() {
                 return;
             }
             setProfile(userData);
-            const companyData = await getCompanyByOwner(userData.id);
-            if (!companyData) {
-                setError("Aucune entreprise trouvée");
-                setLoading(false);
-                return;
-            }
-            setCompany(companyData);
             setLoading(false);
         };
 
@@ -63,12 +54,12 @@ export default function UpdateOfferPage() {
             }
             setFormData({
                 title: offerData.title,
-                description: offerData.description,
-                duration: offerData.duration,
-                dateDebut: offerData.start_date,
-                dateFin: offerData.end_date,
-                location: offerData.location,
-                sector: offerData.sector,
+                description: offerData.description ?? "",
+                duration: offerData.duration ?? "",
+                dateDebut: offerData.start_date ?? "",
+                dateFin: offerData.end_date ?? "",
+                location: offerData.location ?? "",
+                sector: offerData.sector ?? "",
                 status: offerData.status
             });
             setLoading(false);
@@ -91,7 +82,7 @@ export default function UpdateOfferPage() {
         setError(null);
 
         // Validate user and company data
-        if (!profile || !company) {
+        if (!profile) {
             setError("Données utilisateur manquantes");
             setLoading(false);
             return;
@@ -105,7 +96,6 @@ export default function UpdateOfferPage() {
         }
         // Create the offer
         const result = await updateOffer(idParam, {
-            company_id: company.id,
             title: formData.title,
             description: formData.description,
             duration: formData.duration,
@@ -113,7 +103,7 @@ export default function UpdateOfferPage() {
             end_date: formData.dateFin,
             location: formData.location,
             sector: formData.sector,
-            status: formData.status
+            status: formData.status as "available" | "filled" | "expired"
         });
 
         const resultSkills = await editOfferSkill(idParam, offerSkills.map(skill => skill.id));

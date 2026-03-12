@@ -1,7 +1,7 @@
 "use client"
 import { useParams } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Application, Offer } from "@/lib/types";
+import { Application, Offer, Skill } from "@/lib/types";
 import { getOfferById } from "@/lib/offers";
 import { getApplicationsByOffer, updateApplicationStatus } from "@/lib/applications";
 import { submitReview, getReviewForApplication } from "@/lib/reviews";
@@ -9,7 +9,9 @@ import BackButton from "@/components/ui/backButton";
 import { X, Mail, FileText, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
+import { getCurrentUser } from "@/lib/auth";
+import { useRouter } from "next/navigation";
+import { getStudentSkills } from "@/lib/skills";
 // Maps each status value to a Tailwind color scheme for the badge
 function statusBadgeClass(status: string) {
     switch (status) {
@@ -23,11 +25,11 @@ function statusBadgeClass(status: string) {
 export default function ApplicationsPage() {
     const params = useParams();
     const id = params.id as string;
+    const router = useRouter();
     const [applications, setApplications] = useState<Application[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [offer, setOffer] = useState<Offer | null>(null);
-
     // Stores the motivation letter currently being viewed (null = closed)
     const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
 
@@ -38,10 +40,12 @@ export default function ApplicationsPage() {
     const [comment, setComment] = useState("");
     const [submittingReview, setSubmittingReview] = useState(false);
     const [reviewSuccess, setReviewSuccess] = useState(false);
+    const [skillsByStudent, setSkillsByStudent] = useState<Record<string, Skill[]>>({});
     // Tracks which applications have already been reviewed
-    const [reviewedAppIds, setReviewedAppIds] = useState<Set<string>>(new Set());
+    const [reviewedAppIds, setReviewedAppIds] = useState<Set<string>>(new Set()); // Collection of unique values
 
     useEffect(() => {
+        
         const fetchOffer = async () => {
             const offerData = await getOfferById(id);
             if (!offerData) {
@@ -57,8 +61,19 @@ export default function ApplicationsPage() {
                 const applicationsData = await getApplicationsByOffer(id)
                 setApplications(applicationsData)
 
+                // Fetch skills for each student
+                const skillsMap: Record<string, Skill[]> = {};
+                await Promise.all(
+                    applicationsData.map(async (app) => {
+                        
+                        skillsMap[app.student_id] = await getStudentSkills(app.student_id);
+                        console.log(skillsMap)
+                    })
+                );
+                setSkillsByStudent(skillsMap);
                 // Check which accepted applications already have a review
                 const acceptedApps = applicationsData.filter(a => a.status === 'accepted');
+                // Map over the accepted applications and check if they have a review
                 const reviewChecks = await Promise.all(
                     acceptedApps.map(async (app) => {
                         const review = await getReviewForApplication(app.id);
@@ -76,7 +91,7 @@ export default function ApplicationsPage() {
     }, []);
 
     // Called when the company changes an applicant's status via the dropdown
-    const handleStatusChange = async (applicationId: string, newStatus: string) => {
+    const handleStatusChange = async (applicationId: string, newStatus: "pending" | "accepted" | "rejected") => {
         const success = await updateApplicationStatus(applicationId, newStatus);
         if (success) {
             setApplications((prev) =>
@@ -128,20 +143,31 @@ export default function ApplicationsPage() {
                         {applications.map((application) => (
                             <div
                                 key={application.id}
-                                className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm flex flex-col gap-3"
+                                className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm flex flex-col gap-3"
                             >
                                 {/* Top row: name + badge */}
                                 <div className="flex items-center justify-between gap-3">
                                     <div className="flex items-center gap-3">
                                         {/* Avatar circle with initials */}
                                         <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-semibold text-sm shrink-0">
-                                            {(application as any).profile?.first_name?.[0]}
-                                            {(application as any).profile?.last_name?.[0]}
+                                            {application.profile?.first_name?.[0]}
+                                            {application.profile?.last_name?.[0]}
                                         </div>
                                         <span className="font-semibold text-gray-900">
-                                            {(application as any).profile?.first_name}{" "}
-                                            {(application as any).profile?.last_name}
+                                            {application.profile?.first_name}{" "}
+                                            {application.profile?.last_name}
                                         </span>
+                                        <div className="flex flex-wrap gap-2 ">
+                                            {skillsByStudent[application.student_id]?.length > 0 ? (
+                                                skillsByStudent[application.student_id].map(skill => (
+                                                    <span key={skill.id} className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                        {skill.name}
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                <p className="text-gray-500 text-sm italic pt-4.5">Aucune compétence ajoutée</p>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <Badge className={statusBadgeClass(application.status) + " px-3 py-1"}>
@@ -154,7 +180,7 @@ export default function ApplicationsPage() {
                                     {/* Status dropdown — lets the company accept or reject */}
                                     <select
                                         value={application.status}
-                                        onChange={(e) => handleStatusChange(application.id, e.target.value)}
+                                        onChange={(e) => handleStatusChange(application.id, e.target.value as "pending" | "accepted" | "rejected")}
                                         className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-gray-50 text-gray-700 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400"
                                     >
                                         <option value="pending">En attente</option>
